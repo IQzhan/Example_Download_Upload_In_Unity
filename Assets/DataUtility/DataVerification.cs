@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 
-namespace E
+namespace E.Data
 {
     public class DataVerification
     {

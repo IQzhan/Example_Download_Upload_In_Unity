@@ -10,8 +10,6 @@ namespace E.Net
         public int MaxTaskNum
         { get { return taskHandler.MaxTaskNum; } set { taskHandler.MaxTaskNum = value; } }
 
-        //public System.Uri DefaultBaseCacheUri;
-
         public string[] VersionHeaderNames = { "X-COS-META-MD5" };
 
         private readonly DownloadHandler downloadHandler;
@@ -65,6 +63,7 @@ namespace E.Net
             };
             taskHandler.AddTask(ref task);
         }
+
 
         /// <summary>
         /// 仅加载不保存到本地
@@ -179,7 +178,7 @@ namespace E.Net
             catch (System.Exception e)
             {
                 if (downloaderRequest != null) { downloaderRequest.IsError = true; }
-                DownloaderDebug.LogError(e.Message + System.Environment.NewLine + e.StackTrace);
+                DownloaderDebug.LogException(e);
                 return false;
             }
             return true;

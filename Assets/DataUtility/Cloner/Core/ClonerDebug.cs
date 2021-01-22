@@ -1,6 +1,6 @@
-﻿namespace E.Net
+﻿namespace E.Data
 {
-    public class DownloaderDebug
+    public class ClonerDebug
     {
         public static bool enableLog = false;
 
@@ -20,22 +20,22 @@
 
         public static void OverrideLog(System.Action<string> logAction)
         {
-            DownloaderDebug.logAction = logAction;
+            ClonerDebug.logAction = logAction;
         }
 
         public static void OverrideLogError(System.Action<string> logErrorAction)
         {
-            DownloaderDebug.logErrorAction = logErrorAction;
+            ClonerDebug.logErrorAction = logErrorAction;
         }
 
         public static void OverrideLogWarning(System.Action<string> logWarningAction)
         {
-            DownloaderDebug.logWarningAction = logWarningAction;
+            ClonerDebug.logWarningAction = logWarningAction;
         }
 
         public static void OverrideLogException(System.Action<System.Exception> logExceptionAction)
         {
-            DownloaderDebug.logExceptionAction = logExceptionAction;
+            ClonerDebug.logExceptionAction = logExceptionAction;
         }
 
         public static void Log(string message)
