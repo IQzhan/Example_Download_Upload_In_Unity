@@ -16,12 +16,12 @@
             } 
         }
 
-        public bool LoadAfterDownloaded
+        public bool LoadData
         {
-            get { return loadAfterDownloaded; }
+            get { return loadData; }
             set
             {
-                if (!IsWorking) { loadAfterDownloaded = value; }
+                if (!IsWorking) { loadData = value; }
                 else throw new System.MemberAccessException("can't access LoadAfterDownloaded while task is working.");
             }
         }
@@ -98,7 +98,7 @@
         /// value [0, 1]
         /// </summary>
         public double Progress
-        { get { return LoadAfterDownloaded ? (DownloadProgress + LoadingProgress) / 2 : DownloadProgress; } }
+        { get { return LoadData ? (DownloadProgress + LoadingProgress) / 2 : DownloadProgress; } }
 
         /// <summary>
         /// Download progress value [0, 1]
@@ -148,7 +148,7 @@
 
         private bool forceTestConnection = false;
 
-        private bool loadAfterDownloaded = true;
+        private bool loadData = true;
 
         private long lastDownloadedSizeTime;
 

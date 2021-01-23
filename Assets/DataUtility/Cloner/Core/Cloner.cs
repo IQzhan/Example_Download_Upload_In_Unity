@@ -106,83 +106,86 @@
                         try
                         {
                             request.IsWorking = true;
+                            request.IsConnecting = true;
                             if (sourceStream != null) sourceStream.Timeout = request.Timeout;
                             if (targetStream != null) targetStream.Timeout = request.Timeout;
                             bool sourceExists = sourceStream != null && sourceStream.Exists;
                             bool targetExists = targetStream != null && targetStream.Exists;
-                            //版本 使用lastModified 和 长度 计算而成
+                            if(!sourceExists && !targetExists)
+                            { throw new System.IO.IOException("source and target are both not exists."); }
                             string sourceVersion = sourceExists ? sourceStream.Version : null;
                             string targetVersion = targetExists ? targetStream.Version : null;
-                            //获取不到版本 
-                            bool versionEqual = sourceVersion == targetVersion;
-                            bool complete = targetExists ? targetStream.Complete : false;
-                            
-                            if(sourceExists && targetExists && !versionEqual)
-                            {
-                                if (!(targetStream.Delete() && targetStream.Create()))
-                                {
-                                    
-                                }
+                            bool versionChanged = sourceExists && ((sourceVersion == null) || (sourceVersion != targetVersion));
+                            if (targetExists && versionChanged)
+                            { 
+                                if (!targetStream.Delete()) return; 
+                                targetExists = false; 
                             }
-                            if(sourceExists && targetExists && versionEqual)
+                            if (sourceExists && targetStream != null && !targetExists)
                             {
-                                //c
+                                if (!targetStream.Create()) return;
+                                targetExists = true;
                             }
-
-
-                            if (!sourceStream.Exists)
-                                throw new System.IO.FileNotFoundException("source does't exist.");
-                            if (!sourceStream.CanRead)
-                                throw new System.IO.InvalidDataException("source is not allow to read.");
-                            long length = sourceStream.Length;
-                            if (request.LoadAfterDownloaded)
-                            { data = new byte[length]; }
+                            bool complete = targetExists && targetStream.Complete;
+                            bool targetCanRead = targetExists && targetStream.CanRead;
+                            bool targetCanWrite = targetExists && targetStream.CanWrite;
+                            bool sourceCanRead = sourceExists && sourceStream.CanRead;
+                            //init length
+                            long length = -1;
+                            if (complete) length = targetStream.Length;
+                            else if (sourceExists) length = sourceStream.Length;
+                            if (length < 0) throw new System.IO.IOException("cause an error while try to get length of data.");
+                            request.Size = length;
+                            if (request.LoadData) { data = new byte[length]; }
                             long currentPosition = 0;
                             byte[] temp = new byte[CacheSize];
-                            if (targetStream != null)
+                            request.IsConnecting = false;
+                            //preload form target if exists
+                            if (request.LoadData && targetExists && targetCanRead
+                            && (sourceExists || (!sourceExists && complete)) )
                             {
-                                if (targetStream.Exists)
+                                request.IsLoading = true;
+                                long targetLength = targetStream.Length;
+                                while (currentPosition < targetLength)
                                 {
-                                    if (request.LoadAfterDownloaded && targetStream.CanRead)
-                                    {
-                                        while (currentPosition < targetStream.Length)
-                                        {
-                                            int readCount = targetStream.Read(temp, 0, CacheSize);
-                                            for (int i = 0; i < readCount; i++)
-                                            {
-                                                data[currentPosition + i] = temp[i];
-                                            }
-                                            currentPosition += readCount;
-                                        }
-                                    }
-                                    else
-                                    { currentPosition = targetStream.Length; }
-                                    if (targetStream.Length == length)
-                                    { targetStream.Complete = true;  return; }
-                                }
-                                else
-                                {
-                                    if (!targetStream.Create())
-                                        throw new System.IO.IOException("create file faild.");
-                                }
-                            }
-                            sourceStream.Position = currentPosition;
-                            while (currentPosition < length)
-                            {
-                                int readCount = sourceStream.Read(temp, 0, CacheSize);
-                                if (targetStream != null && targetStream.CanWrite)
-                                { targetStream.Write(temp, 0, readCount); }
-                                if (request.LoadAfterDownloaded)
-                                {
+                                    int readCount = targetStream.Read(temp, 0, CacheSize);
                                     for (int i = 0; i < readCount; i++)
                                     {
                                         data[currentPosition + i] = temp[i];
                                     }
+                                    currentPosition += readCount;
+                                    request.LoadedSize = currentPosition;
+                                    request.DownloadedSize = currentPosition;
                                 }
-                                currentPosition += readCount;
                             }
-                            if (targetStream!= null && targetStream.Length == length)
-                            { targetStream.Complete = true; }
+                            //set currentPosition to target length if exists
+                            if (targetExists)
+                            { 
+                                currentPosition = targetStream.Length;
+                                request.DownloadedSize = currentPosition;
+                                if (currentPosition == length) { targetStream.Complete = true; return; }
+                            }
+                            //get from source and add to target and load if need
+                            if (sourceCanRead)
+                            {
+                                if (request.LoadData) request.IsLoading = true;
+                                request.IsDownloading = true;
+                                sourceStream.Position = currentPosition;
+                                while (currentPosition < length)
+                                {
+                                    int readCount = sourceStream.Read(temp, 0, CacheSize);
+                                    if (targetCanWrite) targetStream.Write(temp, 0, readCount);
+                                    if (request.LoadData)
+                                    {
+                                        for (int i = 0; i < readCount; i++)
+                                        { data[currentPosition + i] = temp[i]; }
+                                    }
+                                    currentPosition += readCount;
+                                    if (request.LoadData) request.LoadedSize = currentPosition;
+                                    request.DownloadedSize = currentPosition;
+                                }
+                                if (currentPosition == length) { targetStream.Complete = true; return; }
+                            }
                         }
                         catch (System.Exception e)
                         {

@@ -55,7 +55,7 @@
         /// else use [Version] from file name like [filename.Version.downloading] if is not complete download,
         /// else null
         /// </summary>
-        string Version { get; set; }
+        string Version { get; }
         
         /// <summary>
         /// current seek position,
