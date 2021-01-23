@@ -106,18 +106,30 @@
                         try
                         {
                             request.IsWorking = true;
-                            if (targetStream != null)
+                            if (sourceStream != null) sourceStream.Timeout = request.Timeout;
+                            if (targetStream != null) targetStream.Timeout = request.Timeout;
+                            bool sourceExists = sourceStream != null && sourceStream.Exists;
+                            bool targetExists = targetStream != null && targetStream.Exists;
+                            //版本 使用lastModified 和 长度 计算而成
+                            string sourceVersion = sourceExists ? sourceStream.Version : null;
+                            string targetVersion = targetExists ? targetStream.Version : null;
+                            //获取不到版本 
+                            bool versionEqual = sourceVersion == targetVersion;
+                            bool complete = targetExists ? targetStream.Complete : false;
+                            
+                            if(sourceExists && targetExists && !versionEqual)
                             {
-                                targetStream.Timeout = request.Timeout;
-                                if (targetStream.Exists)
+                                if (!(targetStream.Delete() && targetStream.Create()))
                                 {
-                                    if (targetStream.Complete)
-                                    {
-                                        //直接read
-                                    }
+                                    
                                 }
                             }
-                            sourceStream.Timeout = request.Timeout;
+                            if(sourceExists && targetExists && versionEqual)
+                            {
+                                //c
+                            }
+
+
                             if (!sourceStream.Exists)
                                 throw new System.IO.FileNotFoundException("source does't exist.");
                             if (!sourceStream.CanRead)
