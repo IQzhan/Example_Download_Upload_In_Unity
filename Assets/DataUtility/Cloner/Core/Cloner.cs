@@ -25,11 +25,8 @@
                     {
                         try
                         {
-                            if (targetStream.Exists)
-                            {
-                                if (!targetStream.Delete())
-                                    throw new System.IO.IOException("delete target faild.");
-                            }
+                            if (targetStream!=null && targetStream.Exists && targetStream.Delete())
+                            { }
                         }
                         catch (System.Exception e)
                         {
@@ -41,13 +38,86 @@
             }
         }
 
+        public ClonerRequest Clone(byte[] data, string target)
+        {
+            try
+            {
+                System.Uri targetUri = new System.Uri(target);
+                return Clone(data, targetUri);
+            }
+            catch (System.Exception e)
+            {
+                ClonerDebug.LogException(e);
+                return null;
+            }
+        }
+
         public ClonerRequest Clone(byte[] data, System.Uri target)
         {
             if (Check(in data, in target, out IStream targetStream, out Request request))
             {
-
+                commandHandler.AddCommand(() =>
+                {
+                    void taskAction()
+                    {
+                        try
+                        {
+                            if (targetStream != null)
+                            {
+                                if (targetStream.Exists && targetStream.Delete()) { };
+                                if (!targetStream.Create()) return;
+                                byte[] temp = new byte[CacheSize];
+                                long currentPosition = 0;
+                                long length = data.LongLength;
+                                request.Size = length;
+                                while (currentPosition < length)
+                                {
+                                    long remainCount = length - currentPosition;
+                                    int readCount = remainCount > CacheSize ? CacheSize : (int)remainCount;
+                                    for (int i = 0; i < readCount; i++)
+                                    {
+                                        temp[i] = data[currentPosition + i];
+                                    }
+                                    targetStream.Write(temp, 0, readCount);
+                                    currentPosition += readCount;
+                                    request.DownloadedSize = currentPosition;
+                                }
+                            }
+                            else throw new System.IO.IOException("target is null");
+                        }
+                        catch (System.Exception e)
+                        {
+                            request.IsError = true;
+                            ClonerDebug.LogException(e);
+                        }
+                        finally
+                        {
+                            targetStream?.Close();
+                            request.Close();
+                            commandHandler.AddCommand(() =>
+                            {
+                                request.onClose?.Invoke();
+                            });
+                        }
+                    }
+                    taskHandler.AddTask(taskAction);
+                });
             }
             return request;
+        }
+
+        public ClonerRequest Clone(string source)
+        {
+            try
+            {
+                System.Uri sourceUri = new System.Uri(source);
+                return Clone(sourceUri);
+            }
+            catch (System.Exception e)
+            {
+                ClonerDebug.LogException(e);
+                return null;
+            }
         }
 
         public ClonerRequest Clone(string source, string target)
@@ -65,29 +135,13 @@
             }
         }
 
-        public ClonerRequest Clone(string source)
-        {
-            try
-            {
-                System.Uri sourceUri = new System.Uri(source);
-                return Clone(sourceUri);
-            }
-            catch (System.Exception e)
-            {
-                ClonerDebug.LogException(e);
-                return null;
-            }
-        }
-
         public ClonerRequest Clone(System.Uri source)
         {
             return Clone(source, null);
         }
 
         /// <summary>
-        /// pre read from target and read rest from source 
-        /// -> 
-        /// write to target if target not null
+        /// Clone data from source to target
         /// </summary>
         /// <param name="source"></param>
         /// <param name="target"></param>
@@ -140,7 +194,7 @@
                             long currentPosition = 0;
                             byte[] temp = new byte[CacheSize];
                             request.IsConnecting = false;
-                            //preload form target if exists
+                            //preload form target if exists and need
                             if (request.LoadData && targetExists && targetCanRead
                             && (sourceExists || (!sourceExists && complete)) )
                             {

@@ -37,10 +37,6 @@ namespace E
             {
                 Debug.LogError(message);
             });
-            ClonerDebug.OverrideLogWarning((string message) =>
-            {
-                Debug.LogWarning(message);
-            });
             ClonerDebug.OverrideLogException((System.Exception exception) =>
             {
                 Debug.LogException(exception);

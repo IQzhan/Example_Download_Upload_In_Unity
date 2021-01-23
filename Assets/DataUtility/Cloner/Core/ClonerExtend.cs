@@ -10,8 +10,6 @@
         public long MaxCommandDeltaTick
         { get { return commandHandler.MaxFrameMilliseconds; } set { commandHandler.MaxFrameMilliseconds = value; } }
 
-        
-
         private System.Uri cacheUri;
 
         public System.Uri CacheUri
@@ -29,10 +27,13 @@
 
         private readonly CommandHandler commandHandler;
 
-        public Cloner(System.Uri CacheUri, TaskHandler taskHandler)
+        private readonly StreamFactory streamFactory;
+
+        public Cloner(System.Uri CacheUri, TaskHandler taskHandler, StreamFactory streamFactory)
         {
             this.CacheUri = CacheUri;
             this.taskHandler = taskHandler;
+            this.streamFactory = streamFactory;
             commandHandler = new CommandHandlerInstance();
         }
 
@@ -52,7 +53,7 @@
                     throw new System.ArgumentNullException("data");
                 if (!(target != null && target.IsAbsoluteUri))
                     throw new System.ArgumentException("must be absolute uri", "target");
-                targetStream = StreamFactory.GetStream(target);
+                targetStream = streamFactory.GetStream(target);
                 request = new Request();
             }
             catch (System.Exception e)
@@ -70,7 +71,7 @@
             {
                 if(!(target != null && target.IsAbsoluteUri))
                     throw new System.ArgumentException("must be absolute uri", "target");
-                targetStream = StreamFactory.GetStream(target);
+                targetStream = streamFactory.GetStream(target);
             }
             catch(System.Exception e)
             {
@@ -90,11 +91,11 @@
             {
                 if (!(source != null && source.IsAbsoluteUri)) 
                     throw new System.ArgumentException("must be absolute uri", "source");
-                sourceStream = StreamFactory.GetStream(source);
+                sourceStream = streamFactory.GetStream(source);
                 if (target != null)
                 {
                     if (!target.IsAbsoluteUri) throw new System.ArgumentException("must be absollute uri", "target");
-                    targetStream = StreamFactory.GetStream(target);
+                    targetStream = streamFactory.GetStream(target);
                 }
                 request = new Request();
             }
