@@ -2,7 +2,7 @@
 {
     public partial class Cloner
     {
-        public void Delete(string target)
+        public void Delete(in string target)
         {
             try
             {
@@ -15,7 +15,7 @@
             }
         }
 
-        public void Delete(System.Uri target) 
+        public void Delete(in System.Uri target) 
         {
             if(Check(in target, out IStream targetStream))
             {
@@ -38,7 +38,7 @@
             }
         }
 
-        public ClonerRequest Clone(byte[] data, string target)
+        public ClonerRequest Clone(in byte[] data, in string target)
         {
             try
             {
@@ -52,7 +52,7 @@
             }
         }
 
-        public ClonerRequest Clone(byte[] data, System.Uri target)
+        public ClonerRequest Clone(byte[] data, in System.Uri target)
         {
             if (Check(in data, in target, out IStream targetStream, out Request request))
             {
@@ -64,12 +64,15 @@
                         {
                             if (targetStream != null)
                             {
+                                request.IsConnecting = true;
                                 if (targetStream.Exists && targetStream.Delete()) { };
                                 if (!targetStream.Create()) return;
                                 byte[] temp = new byte[CacheSize];
                                 long currentPosition = 0;
                                 long length = data.LongLength;
                                 request.Size = length;
+                                request.IsConnecting = false;
+                                request.IsProcessing = true;
                                 while (currentPosition < length)
                                 {
                                     long remainCount = length - currentPosition;
@@ -80,7 +83,7 @@
                                     }
                                     targetStream.Write(temp, 0, readCount);
                                     currentPosition += readCount;
-                                    request.DownloadedSize = currentPosition;
+                                    request.ProcessedBytes = currentPosition;
                                 }
                             }
                             else throw new System.IO.IOException("target is null");
@@ -92,7 +95,7 @@
                         }
                         finally
                         {
-                            targetStream?.Close();
+                            targetStream?.Dispose();
                             request.Close();
                             commandHandler.AddCommand(() =>
                             {
@@ -106,7 +109,7 @@
             return request;
         }
 
-        public ClonerRequest Clone(string source)
+        public ClonerRequest Clone(in string source)
         {
             try
             {
@@ -120,7 +123,7 @@
             }
         }
 
-        public ClonerRequest Clone(string source, string target)
+        public ClonerRequest Clone(in string source, in string target)
         {
             try
             {
@@ -135,7 +138,7 @@
             }
         }
 
-        public ClonerRequest Clone(System.Uri source)
+        public ClonerRequest Clone(in System.Uri source)
         {
             return Clone(source, null);
         }
@@ -146,7 +149,7 @@
         /// <param name="source"></param>
         /// <param name="target"></param>
         /// <returns></returns>
-        public ClonerRequest Clone(System.Uri source, System.Uri target)
+        public ClonerRequest Clone(in System.Uri source, in System.Uri target)
         {
             if (Check(in source, in target,
                 out IStream sourceStream,
@@ -198,7 +201,7 @@
                             if (request.LoadData && targetExists && targetCanRead
                             && (sourceExists || (!sourceExists && complete)) )
                             {
-                                request.IsLoading = true;
+                                request.IsProcessing = true;
                                 long targetLength = targetStream.Length;
                                 while (currentPosition < targetLength)
                                 {
@@ -208,22 +211,20 @@
                                         data[currentPosition + i] = temp[i];
                                     }
                                     currentPosition += readCount;
-                                    request.LoadedSize = currentPosition;
-                                    request.DownloadedSize = currentPosition;
+                                    request.ProcessedBytes = currentPosition;
                                 }
                             }
                             //set currentPosition to target length if exists
                             if (targetExists)
                             { 
                                 currentPosition = targetStream.Length;
-                                request.DownloadedSize = currentPosition;
+                                request.ProcessedBytes = currentPosition;
                                 if (currentPosition == length) { targetStream.Complete = true; return; }
                             }
                             //get from source and add to target and load if need
                             if (sourceCanRead)
                             {
-                                if (request.LoadData) request.IsLoading = true;
-                                request.IsDownloading = true;
+                                request.IsProcessing = true;
                                 sourceStream.Position = currentPosition;
                                 while (currentPosition < length)
                                 {
@@ -235,8 +236,7 @@
                                         { data[currentPosition + i] = temp[i]; }
                                     }
                                     currentPosition += readCount;
-                                    if (request.LoadData) request.LoadedSize = currentPosition;
-                                    request.DownloadedSize = currentPosition;
+                                    request.ProcessedBytes = currentPosition;
                                 }
                                 if (currentPosition == length) { targetStream.Complete = true; return; }
                             }
@@ -249,8 +249,10 @@
                         }
                         finally
                         {
-                            sourceStream?.Close();
-                            targetStream?.Close();
+                            sourceStream?.Dispose();
+                            targetStream?.Dispose();
+                            sourceStream = null;
+                            targetStream = null;
                             request.Data = data;
                             request.Close();
                             commandHandler.AddCommand(() =>

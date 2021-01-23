@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace E.Data
 {
-    public abstract class TaskHandler
+    public abstract class TaskHandler : System.IDisposable
     {
         protected interface ITask
         {
@@ -58,6 +58,32 @@ namespace E.Data
                 taskList.AddLast(downloaderTask);
                 downloaderTask.RunTask(action);
             }
+        }
+
+        private bool disposedValue;
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+
+                }
+
+                disposedValue = true;
+            }
+        }
+
+        ~TaskHandler()
+        {
+            Dispose(disposing: false);
+        }
+
+        public void Dispose()
+        {
+            Dispose(disposing: true);
+            System.GC.SuppressFinalize(this);
         }
     }
 }

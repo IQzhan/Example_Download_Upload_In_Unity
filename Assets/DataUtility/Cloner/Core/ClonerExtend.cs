@@ -23,11 +23,11 @@
             }
         }
 
-        private readonly TaskHandler taskHandler;
+        private TaskHandler taskHandler;
 
-        private readonly CommandHandler commandHandler;
+        private CommandHandler commandHandler;
 
-        private readonly StreamFactory streamFactory;
+        private StreamFactory streamFactory;
 
         public Cloner(System.Uri CacheUri, TaskHandler taskHandler, StreamFactory streamFactory)
         {
@@ -39,8 +39,11 @@
 
         public void Tick()
         {
-            commandHandler.Tick();
-            taskHandler.Tick();
+            if (!disposedValue)
+            {
+                commandHandler.Tick();
+                taskHandler.Tick();
+            }
         }
 
         private bool Check(in byte[] data, in System.Uri target, out IStream targetStream, out Request request)
@@ -117,15 +120,11 @@
 
             public new long Size { get { return base.Size; } set { base.Size = value; } }
 
-            public new long DownloadedSize { get { return base.DownloadedSize; } set { base.DownloadedSize = value; } }
-
-            public new long LoadedSize { get { return base.LoadedSize; } set { base.LoadedSize = value; } }
+            public new long ProcessedBytes { get { return base.ProcessedBytes; } set { base.ProcessedBytes = value; } }
 
             public new bool IsConnecting { get { return base.IsConnecting; } set { base.IsConnecting = value; } }
 
-            public new bool IsDownloading { get { return base.IsDownloading; } set { base.IsDownloading = value; } }
-
-            public new bool IsLoading { get { return base.IsLoading; } set { base.IsLoading = value; } }
+            public new bool IsProcessing { get { return base.IsProcessing; } set { base.IsProcessing = value; } }
 
             public new bool IsClosed { get { return base.IsClosed; } set { base.IsClosed = value; } }
 
@@ -140,33 +139,23 @@
             {
                 if (disposing)
                 {
-                    // TODO: 释放托管状态(托管对象)
+                    cacheUri = null;
+                    streamFactory = null;
                 }
-
-                // TODO: 释放未托管的资源(未托管的对象)并替代终结器
-                // TODO: 将大型字段设置为 null
+                taskHandler.Dispose();
+                commandHandler.Dispose();
+                taskHandler = null;
+                commandHandler = null;
                 disposedValue = true;
             }
         }
 
-        // // TODO: 仅当“Dispose(bool disposing)”拥有用于释放未托管资源的代码时才替代终结器
-        // ~Cloner()
-        // {
-        //     // 不要更改此代码。请将清理代码放入“Dispose(bool disposing)”方法中
-        //     Dispose(disposing: false);
-        // }
-
-        public void Close()
+        ~Cloner()
         {
-            Dispose();
+            Dispose(disposing: false);
         }
 
-        void System.IDisposable.Dispose()
-        {
-            Dispose();
-        }
-
-        private void Dispose()
+        public void Dispose()
         {
             Dispose(disposing: true);
             System.GC.SuppressFinalize(this);

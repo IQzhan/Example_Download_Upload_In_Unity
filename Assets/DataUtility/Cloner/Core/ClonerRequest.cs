@@ -36,8 +36,7 @@
         public void Close()
         {
             IsConnecting = false;
-            IsDownloading = false;
-            IsLoading = false;
+            IsProcessing = false;
             IsWorking = false;
             IsClosed = true;
         }
@@ -52,12 +51,7 @@
         /// <summary>
         /// task is downloading
         /// </summary>
-        public bool IsDownloading { get; protected set; } = false;
-
-        /// <summary>
-        /// task is loading
-        /// </summary>
-        public bool IsLoading { get; protected set; } = false;
+        public bool IsProcessing { get; protected set; } = false;
 
         /// <summary>
         /// is the task finished?
@@ -70,14 +64,9 @@
         public bool IsError { get; protected set; } = false;
 
         /// <summary>
-        /// is download complete?
+        /// is the task process data complete?
         /// </summary>
-        public bool IsDownloadComplete { get { return DownloadProgress == 1; } }
-
-        /// <summary>
-        /// is loading successd?
-        /// </summary>
-        public bool IsLoadingComplete { get { return LoadingProgress == 1; } }
+        public bool IsProcessingComplete { get { return Progress == 1; } }
 
         /// <summary>
         /// Size of data bytes
@@ -85,82 +74,36 @@
         public long Size { get; protected set; }
 
         /// <summary>
-        /// Downloaded size of data bytes
+        /// processed data bytes
         /// </summary>
-        public long DownloadedSize { get; protected set; } = 0;
+        public long ProcessedBytes { get; protected set; } = 0;
 
         /// <summary>
-        /// Loaded size of data bytes
+        /// progress of this task [0, 1]
         /// </summary>
-        public long LoadedSize { get; protected set; } = 0;
+        public double Progress { get { return (double)ProcessedBytes / Size; } }
 
         /// <summary>
-        /// value [0, 1]
+        /// speed byte/second
         /// </summary>
-        public double Progress
-        { get { return LoadData ? (DownloadProgress + LoadingProgress) / 2 : DownloadProgress; } }
+        public double Speed 
+        { get { CalculateSpeed(ref lastProcessedBytesTime, ref lastProcessedBytes, ProcessedBytes, ref speed); return speed; } }
 
         /// <summary>
-        /// Download progress value [0, 1]
-        /// </summary>
-        public double DownloadProgress { get { return (double)DownloadedSize / Size; } }
-
-        /// <summary>
-        /// Loading progress value [0, 1]
-        /// </summary>
-        public double LoadingProgress { get { return (double)LoadedSize / Size; } }
-
-        /// <summary>
-        /// byte/second
-        /// </summary>
-        public double Speed
-        { get { return DownloadSpeed + LoadingSpeed; } }
-
-        /// <summary>
-        /// Download speed byte/second
-        /// </summary>
-        public double DownloadSpeed
-        { get { CalculateSpeed(ref lastDownloadedSizeTime, ref lastDownloadedSize, DownloadedSize, ref downloadSpeed); return downloadSpeed; } }
-
-        /// <summary>
-        /// Loading speed byte/second
-        /// </summary>
-        public double LoadingSpeed
-        { get { CalculateSpeed(ref lastLoadedSizeTime, ref lastLoadedSize, LoadedSize, ref loadingSpeed); return loadingSpeed; } }
-
-        /// <summary>
-        /// second
+        /// remaining time seconds
         /// </summary>
         public double RemainingTime
-        { get { return RemainingDownloadTime + RemainingLoadingTime; } }
-
-        /// <summary>
-        /// second
-        /// </summary>
-        public double RemainingDownloadTime
-        { get { return CalculateRemainingTime(DownloadedSize, DownloadSpeed); } }
-
-        /// <summary>
-        /// second
-        /// </summary>
-        public double RemainingLoadingTime
-        { get { return CalculateRemainingTime(LoadedSize, LoadingSpeed); } }
+        { get { return CalculateRemainingTime(ProcessedBytes, Speed); } }
 
         private bool forceTestConnection = false;
 
         private bool loadData = true;
 
-        private long lastDownloadedSizeTime;
+        private long lastProcessedBytesTime;
 
-        private long lastDownloadedSize;
+        private long lastProcessedBytes;
 
-        private double downloadSpeed;
-
-        private long lastLoadedSizeTime;
-
-        private long lastLoadedSize;
-
-        private double loadingSpeed;
+        private double speed;
 
         private const long oneSecond = 1000;
 

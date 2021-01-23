@@ -3,7 +3,7 @@ using System.Collections.Concurrent;
 
 namespace E.Data
 {
-    internal class CommandHandler
+    internal class CommandHandler : System.IDisposable
     {
         protected CommandHandler() { }
 
@@ -65,6 +65,32 @@ namespace E.Data
                     return;
                 }
             }
+        }
+
+        private bool disposedValue;
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+
+                }
+
+                disposedValue = true;
+            }
+        }
+
+        ~CommandHandler()
+        {
+            Dispose(disposing: false);
+        }
+
+        public void Dispose()
+        {
+            Dispose(disposing: true);
+            System.GC.SuppressFinalize(this);
         }
     }
 }

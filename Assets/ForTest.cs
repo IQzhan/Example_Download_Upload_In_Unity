@@ -43,7 +43,6 @@ namespace E
             }); 
             cloner = new StandaloneCloner(cacheUri);
 
-            cloner.MaxCommandDeltaTick = 40;
             
         }
 
@@ -59,7 +58,7 @@ namespace E
 
         private void OnDestroy()
         {
-            cloner.Close();
+            cloner.Dispose();
         }
     }
 }

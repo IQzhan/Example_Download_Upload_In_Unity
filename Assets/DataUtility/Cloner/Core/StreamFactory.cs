@@ -2,6 +2,6 @@
 {
     public abstract class StreamFactory
     {
-        public abstract IStream GetStream(System.Uri uri);
+        public abstract IStream GetStream(in System.Uri uri);
     }
 }
