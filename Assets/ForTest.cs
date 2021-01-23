@@ -1,5 +1,6 @@
 ﻿using E.Data;
 using UnityEngine;
+using UnityEngine.Networking;
 
 namespace E
 {
@@ -48,7 +49,7 @@ namespace E
 
         private void TestDownload()
         {
-            
+
         }
 
         private void DrawProgress()

@@ -38,7 +38,7 @@
             }
         }
 
-        public ClonerRequest Clone(in byte[] data, in string target)
+        public ClonerAsyncOperation Clone(in byte[] data, in string target)
         {
             try
             {
@@ -52,9 +52,9 @@
             }
         }
 
-        public ClonerRequest Clone(byte[] data, in System.Uri target)
+        public ClonerAsyncOperation Clone(byte[] data, in System.Uri target)
         {
-            if (Check(in data, in target, out IStream targetStream, out Request request))
+            if (Check(in data, in target, out IStream targetStream, out ClonerAsyncOperationImplement request))
             {
                 commandHandler.AddCommand(() =>
                 {
@@ -109,7 +109,7 @@
             return request;
         }
 
-        public ClonerRequest Clone(in string source)
+        public ClonerAsyncOperation Clone(in string source)
         {
             try
             {
@@ -123,7 +123,7 @@
             }
         }
 
-        public ClonerRequest Clone(in string source, in string target)
+        public ClonerAsyncOperation Clone(in string source, in string target)
         {
             try
             {
@@ -138,7 +138,7 @@
             }
         }
 
-        public ClonerRequest Clone(in System.Uri source)
+        public ClonerAsyncOperation Clone(in System.Uri source)
         {
             return Clone(source, null);
         }
@@ -149,12 +149,12 @@
         /// <param name="source"></param>
         /// <param name="target"></param>
         /// <returns></returns>
-        public ClonerRequest Clone(in System.Uri source, in System.Uri target)
+        public ClonerAsyncOperation Clone(in System.Uri source, in System.Uri target)
         {
             if (Check(in source, in target,
                 out IStream sourceStream,
                 out IStream targetStream,
-                out Request request))
+                out ClonerAsyncOperationImplement request))
                 commandHandler.AddCommand(() =>
                 {
                     void commandAction()

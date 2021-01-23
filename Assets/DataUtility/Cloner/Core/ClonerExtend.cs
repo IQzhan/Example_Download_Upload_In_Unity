@@ -25,9 +25,9 @@
 
         private TaskHandler taskHandler;
 
-        private CommandHandler commandHandler;
-
         private StreamFactory streamFactory;
+
+        private CommandHandler commandHandler;
 
         public Cloner(System.Uri CacheUri, TaskHandler taskHandler, StreamFactory streamFactory)
         {
@@ -46,7 +46,7 @@
             }
         }
 
-        private bool Check(in byte[] data, in System.Uri target, out IStream targetStream, out Request request)
+        private bool Check(in byte[] data, in System.Uri target, out IStream targetStream, out ClonerAsyncOperationImplement request)
         {
             targetStream = null;
             request = null;
@@ -57,7 +57,7 @@
                 if (!(target != null && target.IsAbsoluteUri))
                     throw new System.ArgumentException("must be absolute uri", "target");
                 targetStream = streamFactory.GetStream(target);
-                request = new Request();
+                request = new ClonerAsyncOperationImplement();
             }
             catch (System.Exception e)
             {
@@ -85,7 +85,7 @@
         }
 
         private bool Check(in System.Uri source, in System.Uri target,
-            out IStream sourceStream, out IStream targetStream, out Request request)
+            out IStream sourceStream, out IStream targetStream, out ClonerAsyncOperationImplement request)
         {
             sourceStream = null;
             targetStream = null;
@@ -100,7 +100,7 @@
                     if (!target.IsAbsoluteUri) throw new System.ArgumentException("must be absollute uri", "target");
                     targetStream = streamFactory.GetStream(target);
                 }
-                request = new Request();
+                request = new ClonerAsyncOperationImplement();
             }
             catch (System.Exception e)
             {
@@ -112,7 +112,7 @@
 
         private class CommandHandlerInstance : CommandHandler { }
 
-        private class Request : ClonerRequest
+        private class ClonerAsyncOperationImplement : ClonerAsyncOperation
         {
             public new bool IsWorking { get { return base.IsWorking; } set { base.IsWorking = value; } }
 

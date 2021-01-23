@@ -1,7 +1,9 @@
 ﻿namespace E.Data
 {
-    public class ClonerRequest
+    public class ClonerAsyncOperation : AsyncOperation
     {
+        protected ClonerAsyncOperation() { }
+
         public int Timeout = 5 * 1000;
 
         public int MaxRetryTime = 12;
@@ -28,17 +30,15 @@
 
         public byte[] Data { get; protected set; }
 
-        public System.Action onClose;
-
         /// <summary>
         /// Close connection
         /// </summary>
-        public void Close()
+        public override void Close()
         {
             IsConnecting = false;
             IsProcessing = false;
             IsWorking = false;
-            IsClosed = true;
+            base.Close();
         }
 
         public bool IsWorking { get; protected set; } = false;
@@ -52,11 +52,6 @@
         /// task is downloading
         /// </summary>
         public bool IsProcessing { get; protected set; } = false;
-
-        /// <summary>
-        /// is the task finished?
-        /// </summary>
-        public bool IsClosed { get; protected set; } = false;
 
         /// <summary>
         /// is the task caused error?

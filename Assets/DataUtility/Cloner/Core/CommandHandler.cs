@@ -13,7 +13,7 @@ namespace E.Data
 
             public System.Func<bool> condition;
 
-            public Command(System.Action body, System.Func<bool> condition)
+            public Command(in System.Action body, in System.Func<bool> condition)
             {
                 this.body = body;
                 this.condition = condition;
@@ -28,18 +28,18 @@ namespace E.Data
             }
         }
 
-        private readonly ConcurrentQueue<Command> commands = new ConcurrentQueue<Command>();
+        private ConcurrentQueue<Command> commands = new ConcurrentQueue<Command>();
 
         public long MaxFrameMilliseconds { get; set; } = 1000 / 240;
 
         private long currentMilliseconds;
 
-        public void AddCommand(System.Action body, System.Func<bool> condition = null)
+        public void AddCommand(in System.Action body, in System.Func<bool> condition = null)
         {
             Enqueue(body, condition);
         }
 
-        private void Enqueue(System.Action body, System.Func<bool> condition = null)
+        private void Enqueue(in System.Action body, in System.Func<bool> condition = null)
         {
             if (body != null)
             {
@@ -49,8 +49,9 @@ namespace E.Data
 
         public void Tick()
         {
+            if (disposedValue) return;
             currentMilliseconds = ClonerClock.Milliseconds;
-            while (commands.TryDequeue(out Command commond))
+            while (!commands.IsEmpty && commands.TryDequeue(out Command commond))
             {
                 try
                 {
@@ -75,16 +76,11 @@ namespace E.Data
             {
                 if (disposing)
                 {
-
+                    while (!commands.IsEmpty && commands.TryDequeue(out Command commond)) { }
+                    commands = null;
                 }
-
                 disposedValue = true;
             }
-        }
-
-        ~CommandHandler()
-        {
-            Dispose(disposing: false);
         }
 
         public void Dispose()

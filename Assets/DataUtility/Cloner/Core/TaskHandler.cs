@@ -32,8 +32,11 @@ namespace E.Data
 
         public void Tick()
         {
-            TryEndTask();
-            TryRunTask();
+            if (!disposedValue)
+            {
+                TryEndTask();
+                TryRunTask();
+            }
         }
 
         private void TryEndTask()
@@ -68,7 +71,7 @@ namespace E.Data
             {
                 if (disposing)
                 {
-
+                    //TODO 
                 }
 
                 disposedValue = true;
