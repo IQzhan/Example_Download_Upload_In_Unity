@@ -25,7 +25,7 @@ namespace E.Data
                     }
                     catch (System.Exception e)
                     {
-                        ClonerDebug.LogException(e);
+                        DataProcessorDebug.LogException(e);
                     }
                 });
             }

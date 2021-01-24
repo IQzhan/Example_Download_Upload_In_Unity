@@ -14,7 +14,7 @@ namespace E
 
         private readonly System.Uri cacheUri = new System.Uri(@"E:\Downloads\");
 
-        private Cloner cloner;
+        private DataProcessor dataProcessor;
 
         private void Awake()
         {
@@ -24,25 +24,25 @@ namespace E
 
         private void Update()
         {
-            cloner.Tick();
+            dataProcessor.Tick();
             DrawProgress();
         }
 
         private void Init()
         {
-            ClonerDebug.OverrideLog((string message) =>
+            DataProcessorDebug.OverrideLog((string message) =>
             {
                 Debug.Log(message);
             });
-            ClonerDebug.OverrideLogError((string message) =>
+            DataProcessorDebug.OverrideLogError((string message) =>
             {
                 Debug.LogError(message);
             });
-            ClonerDebug.OverrideLogException((System.Exception exception) =>
+            DataProcessorDebug.OverrideLogException((System.Exception exception) =>
             {
                 Debug.LogException(exception);
-            }); 
-            cloner = new StandaloneCloner(cacheUri);
+            });
+            dataProcessor = new StandaloneDataProcessor(cacheUri);
 
             
         }
@@ -59,7 +59,7 @@ namespace E
 
         private void OnDestroy()
         {
-            cloner.Dispose();
+            dataProcessor.Dispose();
         }
     }
 }

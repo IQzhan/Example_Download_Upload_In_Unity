@@ -1,44 +1,8 @@
 ﻿namespace E.Data
 {
-    public partial class Cloner
+    public partial class DataProcessor
     {
-        public void Delete(in string target)
-        {
-            try
-            {
-                System.Uri targetUri = new System.Uri(target);
-                Delete(targetUri);
-            }
-            catch (System.Exception e)
-            {
-                ClonerDebug.LogException(e);
-            }
-        }
-
-        public void Delete(in System.Uri target) 
-        {
-            if(Check(in target, out IStream targetStream))
-            {
-                commandHandler.AddCommand(() =>
-                {
-                    void taskAction()
-                    {
-                        try
-                        {
-                            if (targetStream!=null && targetStream.Exists && targetStream.Delete())
-                            { }
-                        }
-                        catch (System.Exception e)
-                        {
-                            ClonerDebug.LogException(e);
-                        }
-                    }
-                    taskHandler.AddTask(taskAction);
-                });
-            }
-        }
-
-        public ClonerAsyncOperation Clone(in byte[] data, in string target)
+        public CloneAsyncOperation Clone(in byte[] data, in string target)
         {
             try
             {
@@ -47,14 +11,14 @@
             }
             catch (System.Exception e)
             {
-                ClonerDebug.LogException(e);
+                DataProcessorDebug.LogException(e);
                 return null;
             }
         }
 
-        public ClonerAsyncOperation Clone(byte[] data, in System.Uri target)
+        public CloneAsyncOperation Clone(byte[] data, in System.Uri target)
         {
-            if (Check(in data, in target, out IStream targetStream, out ClonerAsyncOperationImplement request))
+            if (Check(in data, in target, out DataStream targetStream, out CloneAsyncOperationImplement asyncOperation))
             {
                 commandHandler.AddCommand(() =>
                 {
@@ -64,15 +28,14 @@
                         {
                             if (targetStream != null)
                             {
-                                request.IsConnecting = true;
+                                asyncOperation.IsConnecting = true;
                                 if (targetStream.Exists && targetStream.Delete()) { };
                                 if (!targetStream.Create()) return;
                                 byte[] temp = new byte[CacheSize];
                                 long currentPosition = 0;
                                 long length = data.LongLength;
-                                request.Size = length;
-                                request.IsConnecting = false;
-                                request.IsProcessing = true;
+                                asyncOperation.Size = length;
+                                asyncOperation.IsConnecting = false;
                                 while (currentPosition < length)
                                 {
                                     long remainCount = length - currentPosition;
@@ -83,33 +46,33 @@
                                     }
                                     targetStream.Write(temp, 0, readCount);
                                     currentPosition += readCount;
-                                    request.ProcessedBytes = currentPosition;
+                                    asyncOperation.ProcessedBytes = currentPosition;
                                 }
                             }
                             else throw new System.IO.IOException("target is null");
                         }
                         catch (System.Exception e)
                         {
-                            request.IsError = true;
-                            ClonerDebug.LogException(e);
+                            asyncOperation.IsError = true;
+                            DataProcessorDebug.LogException(e);
                         }
                         finally
                         {
                             targetStream?.Dispose();
-                            request.Close();
+                            asyncOperation.Close();
                             commandHandler.AddCommand(() =>
                             {
-                                request.onClose?.Invoke();
+                                asyncOperation.onClose?.Invoke();
                             });
                         }
                     }
                     taskHandler.AddTask(taskAction);
                 });
             }
-            return request;
+            return asyncOperation;
         }
 
-        public ClonerAsyncOperation Clone(in string source)
+        public CloneAsyncOperation Clone(in string source)
         {
             try
             {
@@ -118,12 +81,12 @@
             }
             catch (System.Exception e)
             {
-                ClonerDebug.LogException(e);
+                DataProcessorDebug.LogException(e);
                 return null;
             }
         }
 
-        public ClonerAsyncOperation Clone(in string source, in string target)
+        public CloneAsyncOperation Clone(in string source, in string target)
         {
             try
             {
@@ -133,12 +96,12 @@
             }
             catch (System.Exception e)
             {
-                ClonerDebug.LogException(e);
+                DataProcessorDebug.LogException(e);
                 return null;
             }
         }
 
-        public ClonerAsyncOperation Clone(in System.Uri source)
+        public CloneAsyncOperation Clone(in System.Uri source)
         {
             return Clone(source, null);
         }
@@ -149,12 +112,12 @@
         /// <param name="source"></param>
         /// <param name="target"></param>
         /// <returns></returns>
-        public ClonerAsyncOperation Clone(in System.Uri source, in System.Uri target)
+        public CloneAsyncOperation Clone(in System.Uri source, in System.Uri target)
         {
             if (Check(in source, in target,
-                out IStream sourceStream,
-                out IStream targetStream,
-                out ClonerAsyncOperationImplement request))
+                out DataStream sourceStream,
+                out DataStream targetStream,
+                out CloneAsyncOperationImplement asyncOperation))
                 commandHandler.AddCommand(() =>
                 {
                     void commandAction()
@@ -162,10 +125,10 @@
                         byte[] data = null;
                         try
                         {
-                            request.IsWorking = true;
-                            request.IsConnecting = true;
-                            if (sourceStream != null) sourceStream.Timeout = request.Timeout;
-                            if (targetStream != null) targetStream.Timeout = request.Timeout;
+                            asyncOperation.IsWorking = true;
+                            asyncOperation.IsConnecting = true;
+                            if (sourceStream != null) sourceStream.Timeout = asyncOperation.Timeout;
+                            if (targetStream != null) targetStream.Timeout = asyncOperation.Timeout;
                             bool sourceExists = sourceStream != null && sourceStream.Exists;
                             bool targetExists = targetStream != null && targetStream.Exists;
                             if(!sourceExists && !targetExists)
@@ -192,16 +155,15 @@
                             if (complete) length = targetStream.Length;
                             else if (sourceExists) length = sourceStream.Length;
                             if (length < 0) throw new System.IO.IOException("cause an error while try to get length of data.");
-                            request.Size = length;
-                            if (request.LoadData) { data = new byte[length]; }
+                            asyncOperation.Size = length;
+                            if (asyncOperation.LoadData) { data = new byte[length]; }
                             long currentPosition = 0;
                             byte[] temp = new byte[CacheSize];
-                            request.IsConnecting = false;
+                            asyncOperation.IsConnecting = false;
                             //preload form target if exists and need
-                            if (request.LoadData && targetExists && targetCanRead
+                            if (asyncOperation.LoadData && targetExists && targetCanRead
                             && (sourceExists || (!sourceExists && complete)) )
                             {
-                                request.IsProcessing = true;
                                 long targetLength = targetStream.Length;
                                 while (currentPosition < targetLength)
                                 {
@@ -211,41 +173,40 @@
                                         data[currentPosition + i] = temp[i];
                                     }
                                     currentPosition += readCount;
-                                    request.ProcessedBytes = currentPosition;
+                                    asyncOperation.ProcessedBytes = currentPosition;
                                 }
                             }
                             //set currentPosition to target length if exists
                             if (targetExists)
                             { 
                                 currentPosition = targetStream.Length;
-                                request.ProcessedBytes = currentPosition;
+                                asyncOperation.ProcessedBytes = currentPosition;
                                 if (currentPosition == length) { targetStream.Complete = true; return; }
                             }
                             //get from source and add to target and load if need
                             if (sourceCanRead)
                             {
-                                request.IsProcessing = true;
                                 sourceStream.Position = currentPosition;
                                 while (currentPosition < length)
                                 {
                                     int readCount = sourceStream.Read(temp, 0, CacheSize);
                                     if (targetCanWrite) targetStream.Write(temp, 0, readCount);
-                                    if (request.LoadData)
+                                    if (asyncOperation.LoadData)
                                     {
                                         for (int i = 0; i < readCount; i++)
                                         { data[currentPosition + i] = temp[i]; }
                                     }
                                     currentPosition += readCount;
-                                    request.ProcessedBytes = currentPosition;
+                                    asyncOperation.ProcessedBytes = currentPosition;
                                 }
                                 if (currentPosition == length) { targetStream.Complete = true; return; }
                             }
                         }
                         catch (System.Exception e)
                         {
-                            request.IsError = true;
+                            asyncOperation.IsError = true;
                             data = null;
-                            ClonerDebug.LogException(e);
+                            DataProcessorDebug.LogException(e);
                         }
                         finally
                         {
@@ -253,17 +214,17 @@
                             targetStream?.Dispose();
                             sourceStream = null;
                             targetStream = null;
-                            request.Data = data;
-                            request.Close();
+                            asyncOperation.Data = data;
+                            asyncOperation.Close();
                             commandHandler.AddCommand(() =>
                             {
-                                request.onClose?.Invoke();
+                                asyncOperation.onClose?.Invoke();
                             });
                         }
                     }
                     taskHandler.AddTask(commandAction);
                 });
-            return request;
+            return asyncOperation;
         }
     }
 }

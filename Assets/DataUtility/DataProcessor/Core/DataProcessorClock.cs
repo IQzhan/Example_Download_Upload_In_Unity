@@ -2,11 +2,11 @@
 
 namespace E.Data
 {
-    public static class ClonerClock
+    public static class DataProcessorClock
     {
         private static readonly Stopwatch stopwatch = new Stopwatch();
 
-        static ClonerClock()
+        static DataProcessorClock()
         {
             stopwatch.Start();
         }

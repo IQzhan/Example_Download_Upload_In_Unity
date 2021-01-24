@@ -6,11 +6,11 @@ using System.Threading.Tasks;
 
 namespace E.Data
 {
-    public class StandaloneStreamFactory : StreamFactory
+    public class StandaloneStreamFactory : DataStreamFactory
     {
         protected StandaloneStreamFactory() { }
 
-        public override IStream GetStream(in Uri uri)
+        public override DataStream GetStream(in Uri uri)
         {
             if (uri.IsFile)
             {
@@ -22,7 +22,7 @@ namespace E.Data
             }
         }
 
-        private class FileStream : IStream
+        private class FileStream : DataStream
         {
             public override string Host => throw new NotImplementedException();
 
@@ -77,7 +77,7 @@ namespace E.Data
             }
         }
 
-        private class HttpStream : IStream
+        private class HttpStream : DataStream
         {
             public override string Host => throw new NotImplementedException();
 
@@ -132,7 +132,7 @@ namespace E.Data
             }
         }
 
-        private class FtpStream : IStream
+        private class FtpStream : DataStream
         {
             public override string Host => throw new NotImplementedException();
 
@@ -187,7 +187,7 @@ namespace E.Data
             }
         }
 
-        private class WebStream : IStream
+        private class WebStream : DataStream
         {
             public override string Host => throw new NotImplementedException();
 

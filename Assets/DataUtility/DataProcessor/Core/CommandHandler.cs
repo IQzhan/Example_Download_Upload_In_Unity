@@ -50,7 +50,7 @@ namespace E.Data
         public void Tick()
         {
             if (disposedValue) return;
-            currentMilliseconds = ClonerClock.Milliseconds;
+            currentMilliseconds = DataProcessorClock.Milliseconds;
             while (!commands.IsEmpty && commands.TryDequeue(out Command commond))
             {
                 try
@@ -59,9 +59,9 @@ namespace E.Data
                 }
                 catch (Exception e)
                 {
-                    ClonerDebug.LogException(e);
+                    DataProcessorDebug.LogException(e);
                 }
-                if (ClonerClock.Milliseconds - currentMilliseconds >= MaxFrameMilliseconds)
+                if (DataProcessorClock.Milliseconds - currentMilliseconds >= MaxFrameMilliseconds)
                 {
                     return;
                 }

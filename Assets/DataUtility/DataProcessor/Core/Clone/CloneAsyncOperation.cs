@@ -1,8 +1,8 @@
 ﻿namespace E.Data
 {
-    public class ClonerAsyncOperation : AsyncOperation
+    public class CloneAsyncOperation : AsyncOperation
     {
-        protected ClonerAsyncOperation() { }
+        protected CloneAsyncOperation() { }
 
         public int Timeout = 5 * 1000;
 
@@ -36,32 +36,13 @@
         public override void Close()
         {
             IsConnecting = false;
-            IsProcessing = false;
-            IsWorking = false;
             base.Close();
         }
-
-        public bool IsWorking { get; protected set; } = false;
 
         /// <summary>
         /// connecting to source uri?
         /// </summary>
         public bool IsConnecting { get; protected set; } = false;
-
-        /// <summary>
-        /// task is downloading
-        /// </summary>
-        public bool IsProcessing { get; protected set; } = false;
-
-        /// <summary>
-        /// is the task caused error?
-        /// </summary>
-        public bool IsError { get; protected set; } = false;
-
-        /// <summary>
-        /// is the task process data complete?
-        /// </summary>
-        public bool IsProcessingComplete { get { return Progress == 1; } }
 
         /// <summary>
         /// Size of data bytes
@@ -76,7 +57,7 @@
         /// <summary>
         /// progress of this task [0, 1]
         /// </summary>
-        public double Progress { get { return (double)ProcessedBytes / Size; } }
+        public override double Progress { get { return (double)ProcessedBytes / Size; } }
 
         /// <summary>
         /// speed byte/second
@@ -104,12 +85,12 @@
 
         private void CalculateSpeed(ref long lastTime, ref long lastSize, long currentSize, ref double speed)
         {
-            long deltaTime = ClonerClock.Milliseconds - lastTime;
+            long deltaTime = DataProcessorClock.Milliseconds - lastTime;
             if (deltaTime >= oneSecond)
             {
                 long deltaSize = currentSize - lastSize;
                 speed = (double)deltaSize / deltaTime * oneSecond;
-                lastTime = ClonerClock.Milliseconds;
+                lastTime = DataProcessorClock.Milliseconds;
                 lastSize = currentSize;
             }
         }

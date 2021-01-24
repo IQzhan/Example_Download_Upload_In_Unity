@@ -1,6 +1,6 @@
 ﻿namespace E.Data
 {
-    public class ClonerDebug
+    public class DataProcessorDebug
     {
         public static bool enableLog = false;
 
@@ -16,17 +16,17 @@
 
         public static void OverrideLog(System.Action<string> logAction)
         {
-            ClonerDebug.logAction = logAction;
+            DataProcessorDebug.logAction = logAction;
         }
 
         public static void OverrideLogError(System.Action<string> logErrorAction)
         {
-            ClonerDebug.logErrorAction = logErrorAction;
+            DataProcessorDebug.logErrorAction = logErrorAction;
         }
 
         public static void OverrideLogException(System.Action<System.Exception> logExceptionAction)
         {
-            ClonerDebug.logExceptionAction = logExceptionAction;
+            DataProcessorDebug.logExceptionAction = logExceptionAction;
         }
 
         public static void Log(string message)

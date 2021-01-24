@@ -1,6 +1,6 @@
 ﻿namespace E.Data
 {
-    public abstract class IStream : System.IDisposable
+    public abstract class DataStream : System.IDisposable
     {
         /// <summary>
         /// host of uri
@@ -109,7 +109,7 @@
             }
         }
 
-        ~IStream()
+        ~DataStream()
         {
             Dispose(disposing: false);
         }
