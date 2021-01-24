@@ -35,18 +35,18 @@
                             asyncOperation.IsError = true;
                             DataProcessorDebug.LogException(e);
                         }
-                        finally
-                        {
-                            targetStream?.Dispose();
-                            targetStream = null;
-                            asyncOperation?.Close();
-                            commandHandler.AddCommand(() =>
-                            {
-                                asyncOperation.onClose?.Invoke();
-                            });
-                        }
                     }
-                    taskHandler.AddTask(taskAction);
+                    void cleanTask()
+                    {
+                        targetStream?.Dispose();
+                        targetStream = null;
+                        asyncOperation?.Close();
+                        commandHandler.AddCommand(() =>
+                        {
+                            asyncOperation.onClose?.Invoke();
+                        });
+                    }
+                    taskHandler.AddTask(taskAction, cleanTask);
                 });
             }
             return asyncOperation;

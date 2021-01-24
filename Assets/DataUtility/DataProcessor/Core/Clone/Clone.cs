@@ -56,17 +56,17 @@
                             asyncOperation.IsError = true;
                             DataProcessorDebug.LogException(e);
                         }
-                        finally
-                        {
-                            targetStream?.Dispose();
-                            asyncOperation.Close();
-                            commandHandler.AddCommand(() =>
-                            {
-                                asyncOperation.onClose?.Invoke();
-                            });
-                        }
                     }
-                    taskHandler.AddTask(taskAction);
+                    void cleanTask()
+                    {
+                        targetStream?.Dispose();
+                        asyncOperation.Close();
+                        commandHandler.AddCommand(() =>
+                        {
+                            asyncOperation.onClose?.Invoke();
+                        });
+                    }
+                    taskHandler.AddTask(taskAction, cleanTask);
                 });
             }
             return asyncOperation;
@@ -120,7 +120,7 @@
                 out CloneAsyncOperationImplement asyncOperation))
                 commandHandler.AddCommand(() =>
                 {
-                    void commandAction()
+                    void taskAction()
                     {
                         byte[] data = null;
                         try
@@ -210,19 +210,22 @@
                         }
                         finally
                         {
-                            sourceStream?.Dispose();
-                            targetStream?.Dispose();
-                            sourceStream = null;
-                            targetStream = null;
                             asyncOperation.Data = data;
-                            asyncOperation.Close();
-                            commandHandler.AddCommand(() =>
-                            {
-                                asyncOperation.onClose?.Invoke();
-                            });
                         }
                     }
-                    taskHandler.AddTask(commandAction);
+                    void cleanTask()
+                    {
+                        sourceStream?.Dispose();
+                        targetStream?.Dispose();
+                        sourceStream = null;
+                        targetStream = null;
+                        asyncOperation.Close();
+                        commandHandler.AddCommand(() =>
+                        {
+                            asyncOperation.onClose?.Invoke();
+                        });
+                    }
+                    taskHandler.AddTask(taskAction, cleanTask);
                 });
             return asyncOperation;
         }

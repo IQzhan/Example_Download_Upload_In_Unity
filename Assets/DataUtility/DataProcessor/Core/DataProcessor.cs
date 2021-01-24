@@ -57,11 +57,11 @@
                 if (disposing)
                 {
                     cacheUri = null;
-                    streamFactory = null;
                 }
                 taskHandler.Dispose();
                 commandHandler.Dispose();
                 taskHandler = null;
+                streamFactory = null;
                 commandHandler = null;
                 disposedValue = true;
             }

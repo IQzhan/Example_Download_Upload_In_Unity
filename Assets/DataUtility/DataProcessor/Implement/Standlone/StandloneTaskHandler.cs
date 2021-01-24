@@ -6,34 +6,52 @@ namespace E.Data
     {
         protected StandloneTaskHandler() { }
 
-        private class ClonerTask : ITask
+        private class DataTask : ITask
         {
-            public bool IsEnded()
+            public override bool IsEnded()
             {
                 return task.IsCompleted || task.IsCanceled || task.IsFaulted;
             }
 
             private Task task;
 
-            public void RunTask(System.Action action)
+            public override void RunTask()
             {
                 task = Task.Run(() =>
                 {
                     try
                     {
-                        action();
+                        bodyAction();
                     }
                     catch (System.Exception e)
                     {
                         DataProcessorDebug.LogException(e);
                     }
+                    finally
+                    {
+                        task = null;
+                    }
                 });
+            }
+
+            public override void RunClear()
+            {
+                try
+                {
+                    cleanAction();
+                    task?.Dispose();
+                    task = null;
+                }
+                catch(System.Exception e)
+                {
+                    DataProcessorDebug.LogException(e);
+                }
             }
         }
 
         protected override ITask GetTaskInstance()
         {
-            return new ClonerTask();
+            return new DataTask();
         }
     }
 }
