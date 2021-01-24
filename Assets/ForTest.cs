@@ -44,7 +44,9 @@ namespace E
             });
             dataProcessor = new StandaloneDataProcessor(cacheUri);
 
+            dataProcessor.StartAsyncOperationGroup();
             
+            dataProcessor.EndAsyncOperationGroup();
         }
 
         private void TestDownload()
