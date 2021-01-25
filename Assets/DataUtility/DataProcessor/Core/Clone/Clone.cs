@@ -144,6 +144,7 @@
                             if (sourceExists && targetStream != null && !targetExists)
                             {
                                 if (!targetStream.Create()) return;
+                                targetStream.LastModified = sourceStream.LastModified;
                                 targetExists = true;
                             }
                             bool complete = targetExists && targetStream.Complete;

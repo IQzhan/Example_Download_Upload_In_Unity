@@ -2,15 +2,12 @@
 {
     public abstract class DataStream : System.IDisposable
     {
-        /// <summary>
-        /// host of uri
-        /// </summary>
-        public abstract string Host { get; }
+        protected DataStream(in System.Uri uri)
+        {
+            this.uri = uri;
+        }
 
-        /// <summary>
-        /// name of file, random for others
-        /// </summary>
-        public abstract string Name { get; }
+        protected System.Uri uri;
 
         /// <summary>
         /// connection timeout
@@ -48,7 +45,7 @@
         /// last modified time milliseconds of data,
         /// if get nothing, use now milliseconds
         /// </summary>
-        public abstract long LastModified { get; }
+        public abstract System.DateTime LastModified { get; set; }
 
         /// <summary>
         /// use [LastModified] and [Length] to generate a [Version] if data complete downloaded,
@@ -103,6 +100,7 @@
                 if (disposing)
                 {
                     ReleaseManaged();
+                    uri = null;
                 }
                 ReleaseUnmanaged();
                 disposedValue = true;

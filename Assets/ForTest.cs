@@ -1,4 +1,6 @@
 ﻿using E.Data;
+using System.Net;
+using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Networking;
 
@@ -51,7 +53,47 @@ namespace E
 
         private void TestDownload()
         {
+            //Task task = Task.Run(() =>
+            //{
+            //    try
+            //    {
+            //        HttpWebRequest webRequest = WebRequest.CreateHttp(@"http://localhost:4321/files/");
+            //        //System.IO.Stream reqstream = httpreq.GetRequestStream();
+            //        //webRequest.WriteTimeout = 5 * 1000;
+            //        if (webRequest == null) return;
+            //        WebResponse webResponse = webRequest.GetResponse();
+            //        if (webResponse == null) return;
+            //        Debug.Log(webResponse.Headers);
+            //        System.IO.StreamReader respStream = new System.IO.StreamReader(webResponse.GetResponseStream());
+            //        string text = respStream.ReadToEnd();
+            //        Debug.Log(text);
+            //    }
+            //    catch (System.Exception e)
+            //    {
+            //        Debug.LogException(e);
+            //    }
 
+            //});
+
+
+            //WebClient webClient = new WebClient();
+
+            //webClient.UploadFile(@"http://localhost:4321/dir/fuckyou.txt", "PUT" ,@"E:/Downloads/fuckyou.txt");
+
+        }
+
+        private PathInfo[] GetFiles(string text)
+        {
+
+            return null;
+        }
+
+        public struct PathInfo
+        {
+            public bool isDir;
+            public string name;
+            public long length;
+            public long time;
         }
 
         private void DrawProgress()
