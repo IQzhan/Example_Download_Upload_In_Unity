@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 namespace E.Data
@@ -12,15 +13,30 @@ namespace E.Data
             if (uri.IsFile)
             { return new FileStream(uri); }
             else if((uri.Scheme == System.Uri.UriSchemeHttp) || (uri.Scheme == System.Uri.UriSchemeHttp))
-            { return new HttpStream(uri); }
+            { return new HttpStream(uri, this); }
             else if(uri.Scheme == System.Uri.UriSchemeFtp)
             { return new FtpStream(uri); }
-            else { return new WebStream(uri); }
+            else { throw new System.ArgumentException("Unsupported uri scheme.", "uri"); }
         }
-        
+
+        private ConcurrentDictionary<string, bool> testedHostConnection = new ConcurrentDictionary<string, bool>();
+
+
+        protected override void ReleaseManaged()
+        {
+            testedHostConnection.Clear();
+            testedHostConnection = null;
+        }
+
+        protected override void ReleaseUnmanaged()
+        {
+        }
+
         private class FileStream : DataStream
         {
             public FileStream(in System.Uri uri) : base(uri) { }
+
+            private const string extend = @".downloading";
 
             private string fileName;
 
@@ -33,9 +49,7 @@ namespace E.Data
                 get
                 {
                     if(stream == null)
-                    {
-                        stream = System.IO.File.Open(FileName, System.IO.FileMode.OpenOrCreate, System.IO.FileAccess.ReadWrite);
-                    }
+                    { stream = System.IO.File.Open(FileName, System.IO.FileMode.OpenOrCreate, System.IO.FileAccess.ReadWrite); }
                     return stream;
                 }
                 set
@@ -52,7 +66,7 @@ namespace E.Data
             private void RefreshFileName()
             {
                 string localPath = uri.LocalPath;
-                if (System.IO.File.Exists(localPath)) 
+                if (System.IO.File.Exists(localPath))
                 { fileName = localPath; fileInfo = null; fileInfo = new System.IO.FileInfo(fileName); }
                 else
                 {
@@ -79,13 +93,13 @@ namespace E.Data
 
             public override bool Complete
             {
-                get { return FileName != null && !FileName.EndsWith(".downloading"); }
+                get { return FileName != null && !FileName.EndsWith(extend); }
                 set
                 {
-                    if (value && FileName != null && FileName.EndsWith(".downloading"))
+                    if (value && FileName != null && FileName.EndsWith(extend))
                     {
                         System.DateTime lastTime = LastModified;
-                        System.IO.File.Move(FileName, uri.LocalPath);
+                        fileInfo.MoveTo(uri.LocalPath);
                         RefreshFileName();
                         fileInfo.LastWriteTime = lastTime;
                     }
@@ -94,28 +108,28 @@ namespace E.Data
 
             public override long Length => FileName != null ? fileInfo.Length : 0;
 
-            private static readonly System.Text.RegularExpressions.Regex LastModifiedRegex 
+            private static readonly System.Text.RegularExpressions.Regex LastModifiedRegex
                 = new System.Text.RegularExpressions.Regex(@".+(?:\.([0-9]+)\.downloading)$");
 
-            public override System.DateTime LastModified 
+            public override System.DateTime LastModified
             {
                 get
                 {
                     if(FileName != null)
                     {
-                        if (FileName.EndsWith(".downloading"))
+                        if (FileName.EndsWith(extend))
                         {
                             System.Text.RegularExpressions.MatchCollection matchCollection = LastModifiedRegex.Matches(FileName);
                             if(matchCollection.Count > 0)
                             {
                                 string val = matchCollection[0].Groups[1].Value;
                                 if(long.TryParse(val, out long lastmodifiedTick))
-                                {
-                                    return new System.DateTime(lastmodifiedTick);
-                                }
+                                { return new System.DateTime(lastmodifiedTick); }
                             }
+                            return System.DateTime.MinValue;
                         }
-                        return fileInfo.LastWriteTime;
+                        else
+                        { return fileInfo.LastWriteTime; }
                     }
                     return System.DateTime.MinValue;
                 }
@@ -123,10 +137,8 @@ namespace E.Data
                 {
                     if (FileName != null)
                     {
-                        if (FileName.EndsWith(".downloading"))
-                        {
-                            fileInfo.MoveTo(uri.LocalPath + value.Ticks.ToString() + ".downloading");
-                        }
+                        if (FileName.EndsWith(extend))
+                        { fileInfo.MoveTo(uri.LocalPath + value.Ticks.ToString() + extend); }
                         fileInfo.LastWriteTime = value;
                     }
                 }
@@ -191,11 +203,93 @@ namespace E.Data
 
         private class HttpStream : DataStream
         {
-            public HttpStream(in System.Uri uri) : base(uri) { }
+            /*GET
+            通过请求URI得到资源
+            POST,
+            用于添加新的内容
+            PUT
+            用于修改某个内容
+            DELETE,
+            删除某个内容
+            CONNECT,
+            用于代理进行传输，如使用SSL
+            OPTIONS
+            询问可以执行哪些方法
+            PATCH,
+            部分文档更改
+            PROPFIND, (wedav)
+            查看属性
+            PROPPATCH, (wedav)
+            设置属性
+            MKCOL, (wedav)
+            创建集合（文件夹）
+            COPY, (wedav)
+            拷贝
+            MOVE, (wedav)
+            移动
+            LOCK, (wedav)
+            加锁
+            UNLOCK (wedav)
+            解锁
+            TRACE
+            用于远程诊断服务器*/
 
-            public override int Timeout { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+            public HttpStream(in System.Uri uri, StandaloneStreamFactory factory) : base(uri) { this.factory = factory; }
 
-            public override bool Exists => throw new NotImplementedException();
+            private StandaloneStreamFactory factory;
+
+            private int timeout;
+
+            public override int Timeout { get => timeout; set => timeout = value; }
+
+            public override bool Exists { get => TestConnection();}
+
+            private bool TestConnection()
+            { return TestHostConnection(uri.Host) && ForceTestConnection(uri.AbsoluteUri); }
+
+            private bool TestHostConnection(string host)
+            {
+                lock (this)
+                {
+                    if (factory.testedHostConnection.ContainsKey(host))
+                    {
+                        return factory.testedHostConnection[host];
+                    }
+                    else
+                    {
+                        bool value = ForceTestConnection(host);
+                        factory.testedHostConnection[host] = value;
+                        return value;
+                    }
+                }
+            }
+
+            private bool ForceTestConnection(string host)
+            {
+                System.Net.HttpWebRequest testRequest = null;
+                System.Net.HttpWebResponse testResponse = null;
+                try
+                {
+                    testRequest = System.Net.WebRequest.Create(host) as System.Net.HttpWebRequest;
+                    if (testRequest == null) return false;
+                    testRequest.Method = System.Net.WebRequestMethods.Http.Head;
+                    testRequest.Timeout = timeout;
+                    testResponse = testRequest.GetResponse() as System.Net.HttpWebResponse;
+                    if (testResponse == null) return false;
+                    if ((int)testResponse.StatusCode / 100 == 2) return true;
+                }
+                catch (System.Net.WebException e)
+                {
+                    DataProcessorDebug.LogException(e);
+                    return false;
+                }
+                finally
+                {
+                    testRequest?.Abort();
+                    testResponse?.Dispose();
+                }
+                return true;
+            }
 
             public override bool Complete { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
 
@@ -203,22 +297,51 @@ namespace E.Data
 
             public override System.DateTime LastModified { get; set; }
 
-            public override string Version => throw new NotImplementedException();
+            public override string Version
+            {
+                get
+                {
+                    System.DateTime lastTime = LastModified;
+                    return lastTime != System.DateTime.MinValue ? lastTime.Ticks.ToString() : null;
+                }
+            }
 
             public override long Position { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
 
-            public override bool CanRead => throw new NotImplementedException();
+            public override bool CanRead => true;
 
             public override bool CanWrite => throw new NotImplementedException();
 
             public override bool Create()
             {
-                throw new NotImplementedException();
+                return true;
             }
 
             public override bool Delete()
             {
-                throw new NotImplementedException();
+                System.Net.HttpWebRequest testRequest = null;
+                System.Net.HttpWebResponse testResponse = null;
+                try
+                {
+                    testRequest = System.Net.WebRequest.Create(uri) as System.Net.HttpWebRequest;
+                    if (testRequest == null) return false;
+                    testRequest.Method = "DELETE";
+                    testRequest.Timeout = timeout;
+                    testResponse = testRequest.GetResponse() as System.Net.HttpWebResponse;
+                    if (testResponse == null) return false;
+                    if ((int)testResponse.StatusCode / 100 == 2) return true;
+                }
+                catch (System.Net.WebException e)
+                {
+                    DataProcessorDebug.LogException(e);
+                    return false;
+                }
+                finally
+                {
+                    testRequest?.Abort();
+                    testResponse?.Dispose();
+                }
+                return true;
             }
 
             public override int Read(byte[] buffer, int offset, int count)
@@ -233,7 +356,7 @@ namespace E.Data
 
             protected override void ReleaseManaged()
             {
-                throw new NotImplementedException();
+                factory = null;
             }
 
             protected override void ReleaseUnmanaged()
@@ -246,9 +369,62 @@ namespace E.Data
         {
             public FtpStream(in System.Uri uri) : base(uri) { }
 
-            public override int Timeout { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+            private int timeout;
+
+            public override int Timeout { get => timeout; set => timeout = value; }
 
             public override bool Exists => throw new NotImplementedException();
+
+            private bool TestConnection()
+            {
+                
+                return true;
+            }
+
+            private string username;
+
+            private string password;
+
+            private System.Net.FtpWebRequest GetRequest(string uri, string mathod)
+            {
+                System.Net.FtpWebRequest req = System.Net.WebRequest.Create(uri) as System.Net.FtpWebRequest;
+                req.Method = mathod;
+                req.Credentials = new System.Net.NetworkCredential(username, password);
+                req.KeepAlive = false;
+                req.UsePassive = false;
+                req.UseBinary = true;
+                return req;
+            }
+
+            private System.IO.Stream requestStream;
+
+            private System.IO.Stream RequestStream
+            {
+                get
+                {
+                    responseStream?.Dispose();
+                    if (requestStream == null)
+                    {
+
+                    }
+                    return requestStream;
+                }
+            }
+
+            private System.IO.Stream responseStream;
+
+            private System.IO.Stream ResponseStream
+            {
+                get
+                {
+                    requestStream?.Dispose();
+                    if (responseStream == null)
+                    {
+
+                    }
+                    return responseStream;
+                }
+            }
 
             public override bool Complete { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
 
@@ -256,9 +432,18 @@ namespace E.Data
 
             public override System.DateTime LastModified { get; set; }
 
-            public override string Version => throw new NotImplementedException();
+            public override string Version
+            {
+                get
+                {
+                    System.DateTime lastTime = LastModified;
+                    return lastTime != System.DateTime.MinValue ? lastTime.Ticks.ToString() : null;
+                }
+            }
 
-            public override long Position { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+            private long position;
+
+            public override long Position { get => position; set => position = value; }
 
             public override bool CanRead => throw new NotImplementedException();
 
@@ -276,65 +461,12 @@ namespace E.Data
 
             public override int Read(byte[] buffer, int offset, int count)
             {
-                throw new NotImplementedException();
+                return ResponseStream.Read(buffer, offset, count);
             }
 
             public override void Write(byte[] buffer, int offset, int count)
             {
-                throw new NotImplementedException();
-            }
-
-            protected override void ReleaseManaged()
-            {
-                throw new NotImplementedException();
-            }
-
-            protected override void ReleaseUnmanaged()
-            {
-                throw new NotImplementedException();
-            }
-        }
-
-        private class WebStream : DataStream
-        {
-            public WebStream(in System.Uri uri) : base(uri) { }
-
-            public override int Timeout { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-
-            public override bool Exists => throw new NotImplementedException();
-
-            public override bool Complete { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-
-            public override long Length => throw new NotImplementedException();
-
-            public override System.DateTime LastModified { get; set; }
-
-            public override string Version => throw new NotImplementedException();
-
-            public override long Position { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-
-            public override bool CanRead => throw new NotImplementedException();
-
-            public override bool CanWrite => throw new NotImplementedException();
-
-            public override bool Create()
-            {
-                throw new NotImplementedException();
-            }
-
-            public override bool Delete()
-            {
-                throw new NotImplementedException();
-            }
-
-            public override int Read(byte[] buffer, int offset, int count)
-            {
-                throw new NotImplementedException();
-            }
-
-            public override void Write(byte[] buffer, int offset, int count)
-            {
-                throw new NotImplementedException();
+                RequestStream.Write(buffer, offset, count);
             }
 
             protected override void ReleaseManaged()

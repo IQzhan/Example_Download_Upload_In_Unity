@@ -59,6 +59,7 @@
                     cacheUri = null;
                 }
                 taskHandler.Dispose();
+                streamFactory.Dispose();
                 commandHandler.Dispose();
                 taskHandler = null;
                 streamFactory = null;
