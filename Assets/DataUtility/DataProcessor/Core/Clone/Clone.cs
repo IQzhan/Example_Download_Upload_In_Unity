@@ -148,9 +148,6 @@
                                 targetExists = true;
                             }
                             bool complete = targetExists && targetStream.Complete;
-                            bool targetCanRead = targetExists && targetStream.CanRead;
-                            bool targetCanWrite = targetExists && targetStream.CanWrite;
-                            bool sourceCanRead = sourceExists && sourceStream.CanRead;
                             //init length
                             long length = -1;
                             if (complete) length = targetStream.Length;
@@ -162,7 +159,7 @@
                             byte[] temp = new byte[CacheSize];
                             asyncOperation.IsConnecting = false;
                             //preload form target if exists and need
-                            if (asyncOperation.LoadData && targetExists && targetCanRead
+                            if (asyncOperation.LoadData && targetExists
                             && (sourceExists || (!sourceExists && complete)) )
                             {
                                 long targetLength = targetStream.Length;
@@ -185,23 +182,20 @@
                                 if (currentPosition == length) { targetStream.Complete = true; return; }
                             }
                             //get from source and add to target and load if need
-                            if (sourceCanRead)
+                            sourceStream.Position = currentPosition;
+                            while (currentPosition < length)
                             {
-                                sourceStream.Position = currentPosition;
-                                while (currentPosition < length)
+                                int readCount = sourceStream.Read(temp, 0, CacheSize);
+                                targetStream.Write(temp, 0, readCount);
+                                if (asyncOperation.LoadData)
                                 {
-                                    int readCount = sourceStream.Read(temp, 0, CacheSize);
-                                    if (targetCanWrite) targetStream.Write(temp, 0, readCount);
-                                    if (asyncOperation.LoadData)
-                                    {
-                                        for (int i = 0; i < readCount; i++)
-                                        { data[currentPosition + i] = temp[i]; }
-                                    }
-                                    currentPosition += readCount;
-                                    asyncOperation.ProcessedBytes = currentPosition;
+                                    for (int i = 0; i < readCount; i++)
+                                    { data[currentPosition + i] = temp[i]; }
                                 }
-                                if (currentPosition == length) { targetStream.Complete = true; return; }
+                                currentPosition += readCount;
+                                asyncOperation.ProcessedBytes = currentPosition;
                             }
+                            if (currentPosition == length) { targetStream.Complete = true; return; }
                         }
                         catch (System.Exception e)
                         {

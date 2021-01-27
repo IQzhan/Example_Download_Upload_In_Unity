@@ -1,5 +1,7 @@
 ﻿using E.Data;
+using System.Collections.Generic;
 using System.Net;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -80,7 +82,17 @@ namespace E
 
             //webClient.UploadFile(@"http://localhost:4321/dir/fuckyou.txt", "PUT" ,@"E:/Downloads/fuckyou.txt");
             //Delete(new System.Uri(@"http://192.168.88.6:4321/files/dir/jiji.txt"));
-            DoFTP(new System.Uri(@"ftp://localhost/eatmyshit"));
+            //CreateDir(@"ftp://localhost/eatmyshit");
+            //RenameFile(@"ftp://localhost/eatmyshit", @"suckmydick");
+            //GetDirList(@"ftp://localhost/haha");
+            //bool exi = DirExists(@"ftp://localhost/jiba/Postman-win64-8.0.2-Setup.exe");
+            //Debug.LogError(exi);
+            //string[] lists = GetFiles(@"ftp://localhost/");
+            //for(int i = 0; i < lists.Length; i++)
+            //{
+            //    Debug.LogError(lists[i]);
+            //}
+            
         }
 
         public bool Delete(System.Uri uri)
@@ -119,53 +131,128 @@ namespace E
             return true;
         }
 
-        private bool DoFTP(System.Uri uri)
+        private readonly Regex dirListRegex = new Regex(@"(.+)\s+<DIR>\s+(.+)");
+
+        private string[] GetFiles(string dirUri)
         {
-            System.Net.FtpWebRequest testRequest = null;
-            System.Net.FtpWebResponse testResponse = null;
+            System.IO.StreamReader streamReader = null;
+            System.Net.FtpWebResponse ftpWebResponse = null;
+            System.Net.FtpWebRequest ftpWebRequest = null;
             try
             {
-                testRequest = System.Net.WebRequest.Create(uri) as System.Net.FtpWebRequest;
-                if (testRequest == null) return false;
-                //testRequest.PreAuthenticate = true;
-                //testRequest.UseDefaultCredentials = false;
-                //testRequest.Credentials = new System.Net.NetworkCredential("fucker", "123456");
-                testRequest.Method = System.Net.WebRequestMethods.Ftp.MakeDirectory;
-                testRequest.Timeout = 5 * 1000;
-                //System.IO.Stream stream = testRequest.GetRequestStream();
-                //byte[] data = System.Text.UTF8Encoding.UTF8.GetBytes("fuckyourmother");
-                //stream.Write(data, 0, data.Length);
-                //stream.Close();
-
-                testResponse = testRequest.GetResponse() as System.Net.FtpWebResponse;
-                if (testResponse == null) return false;
-                if ((int)testResponse.StatusCode / 100 == 2) return true;
+                if (!dirUri.EndsWith("/")) dirUri += "/";
+                ftpWebRequest = GetRequest(dirUri, System.Net.WebRequestMethods.Ftp.ListDirectory);
+                ftpWebResponse = GetResponse(ftpWebRequest);
+                streamReader = new System.IO.StreamReader(ftpWebResponse.GetResponseStream(), true);
+                string line = null;
+                List<string> lines = new List<string>();
+                while((line = streamReader.ReadLine()) != null)
+                {
+                    lines.Add(line);
+                }
+                return lines.ToArray();
             }
-            catch (System.Net.WebException e)
+            catch(System.Exception e)
             {
                 DataProcessorDebug.LogException(e);
-                return false;
+                return new string[0];
             }
             finally
             {
-                testRequest?.Abort();
-                testResponse?.Dispose();
+                streamReader?.Dispose();
+                ftpWebResponse?.Dispose();
+                ftpWebRequest?.Abort();
             }
+        }
+
+        private bool FileExists(string fileUri)
+        {
+            long length = GetLength(fileUri);
+            if (length == -1) return false;
             return true;
         }
 
-        private PathInfo[] GetFiles(string text)
+        private bool DirExists(string dirPath)
         {
-
-            return null;
+            System.DateTime lastModified = GetLastModified(dirPath);
+            if (lastModified == System.DateTime.MinValue) return false;
+            return true;
         }
 
-        public struct PathInfo
+        private long GetLength(string fileUri)
         {
-            public bool isDir;
-            public string name;
-            public long length;
-            public long time;
+            System.Net.FtpWebRequest ftpWebRequest = null;
+            System.Net.FtpWebResponse ftpWebResponse = null;
+            long length = -1;
+            try
+            {
+                ftpWebRequest = GetRequest(fileUri, System.Net.WebRequestMethods.Ftp.GetFileSize);
+                ftpWebResponse = GetResponse(ftpWebRequest);
+                length = ftpWebResponse.ContentLength;
+            }
+            catch (System.Exception e)
+            {
+                DataProcessorDebug.LogException(e);
+            }
+            finally
+            {
+                ftpWebResponse?.Dispose();
+                ftpWebRequest?.Abort();
+            }
+            return length;
+        }
+
+        private System.DateTime GetLastModified(string fileUri)
+        {
+            System.Net.FtpWebRequest ftpWebRequest = null;
+            System.Net.FtpWebResponse ftpWebResponse = null;
+            try
+            {
+                ftpWebRequest = GetRequest(fileUri, System.Net.WebRequestMethods.Ftp.GetDateTimestamp);
+                ftpWebResponse = GetResponse(ftpWebRequest);
+                System.DateTime lastModified = ftpWebResponse.LastModified;
+                return lastModified;
+            }
+            catch (System.Exception e)
+            {
+                DataProcessorDebug.LogException(e);
+                return System.DateTime.MinValue;
+            }
+            finally
+            {
+                ftpWebResponse?.Dispose();
+                ftpWebRequest?.Abort();
+            }
+        }
+
+        private int timeout = 5 * 1000;
+
+        private System.Net.FtpWebRequest GetRequest(string uri, string mathod)
+        {
+            System.Net.FtpWebRequest req = (System.Net.FtpWebRequest)System.Net.WebRequest.Create(uri);
+            req.Method = mathod;
+            req.Timeout = timeout;
+            //req.ReadWriteTimeout = timeout;
+            //req.Credentials = new System.Net.NetworkCredential(username, password);
+            req.KeepAlive = false;
+            req.UsePassive = false;
+            req.UseBinary = true;
+            return req;
+        }
+
+        private System.Net.FtpWebResponse GetResponse(System.Net.FtpWebRequest request)
+        {
+            return (System.Net.FtpWebResponse)request.GetResponse();
+        }
+
+        private System.IO.Stream GetRequestStream(System.Net.FtpWebRequest request)
+        {
+            return request.GetRequestStream();
+        }
+
+        private System.IO.Stream GetResponseStream(System.Net.FtpWebResponse response)
+        {
+            return response.GetResponseStream();
         }
 
         private void DrawProgress()

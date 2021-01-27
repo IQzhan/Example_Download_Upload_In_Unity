@@ -39,7 +39,7 @@
         /// <summary>
         /// length of data
         /// </summary>
-        public abstract long Length { get; }
+        public abstract long Length { get; set; }
 
         /// <summary>
         /// last modified time milliseconds of data,
@@ -63,12 +63,12 @@
         /// <summary>
         /// true if data can be read
         /// </summary>
-        public abstract bool CanRead { get; }
+        //public abstract bool CanRead { get; }
 
         /// <summary>
         /// true if data can be write
         /// </summary>
-        public abstract bool CanWrite { get; }
+        //public abstract bool CanWrite { get; }
 
         /// <summary>
         /// write data if CanWrite is true
