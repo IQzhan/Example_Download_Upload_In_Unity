@@ -143,6 +143,7 @@
                             }
                             if (sourceExists && targetStream != null && !targetExists)
                             {
+                                targetStream.LastModified = sourceStream.LastModified;
                                 if (!targetStream.Create()) return;
                                 targetStream.LastModified = sourceStream.LastModified;
                                 targetExists = true;

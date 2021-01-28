@@ -2,6 +2,16 @@
 {
     public class CloneAsyncOperation : AsyncOperation
     {
+        public struct User
+        {
+            public string username;
+            public string password;
+        }
+
+        public User sourceUser;
+
+        public User targetUser;
+
         protected CloneAsyncOperation() { }
 
         public int Timeout = 5 * 1000;

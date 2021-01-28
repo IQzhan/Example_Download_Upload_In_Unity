@@ -72,8 +72,8 @@ namespace E.Data
                 { fileName = localPath; fileInfo = null; fileInfo = new System.IO.FileInfo(fileName); }
                 else
                 {
-                    string name = System.IO.Path.GetFileName(localPath);
-                    string dir = System.IO.Path.GetDirectoryName(localPath);
+                    string name = GetFileName(localPath);
+                    string dir = GetDirectoryName(localPath);
                     string[] fileNames = System.IO.Directory.GetFiles
                         (dir, name + ".*.downloading", System.IO.SearchOption.TopDirectoryOnly);
                     if (fileNames.Length > 0) 
@@ -81,7 +81,21 @@ namespace E.Data
                 }
             }
 
-            public override int Timeout { get => 0; set => _ = value; }
+            private static readonly Regex fileNameRegex = new Regex(@"(?:[/\\]{0,1}(?:[^/\\\:\?\*\<\>\|]+[/\\])+([^/\\\:\?\*\<\>\|]+(?:\.[^/\\\:\?\*\<\>\|]+){0,1}))");
+
+            public static string GetDirectoryName(string filePath)
+            {
+                return filePath.Substring(0, filePath.Length - GetFileName(filePath).Length - 1);
+            }
+
+            public static string GetFileName(string filePath)
+            {
+                return fileNameRegex.Match(filePath).Groups[1].Value;
+            }
+
+            public override void SetUser(string username, string password) { }
+
+            public override int Timeout { get => 0; set { } }
 
             public override bool Exists
             { 
@@ -113,6 +127,8 @@ namespace E.Data
             private static readonly System.Text.RegularExpressions.Regex LastModifiedRegex
                 = new System.Text.RegularExpressions.Regex(@".+(?:\.([0-9]+)\.downloading)$");
 
+            public System.DateTime lastModified = System.DateTime.MinValue;
+
             public override System.DateTime LastModified
             {
                 get
@@ -143,6 +159,7 @@ namespace E.Data
                         { fileInfo.MoveTo(uri.LocalPath + value.Ticks.ToString() + extend); }
                         fileInfo.LastWriteTime = value;
                     }
+                    lastModified = value;
                 }
             }
             
@@ -158,20 +175,22 @@ namespace E.Data
             public override bool Delete()
             {
                 if (FileName != null) fileInfo.Delete();
+                fileName = null;
+                fileInfo = null;
                 return true;
             }
 
             public override bool Create()
             {
-                if (FileName != null) 
+                if (fileName == null && lastModified != System.DateTime.MinValue) 
                 {
-                    if (!fileInfo.Directory.Exists)
-                    {
-                        fileInfo.Directory.Create();
-                    }
-                    IoStream = fileInfo.Create();
+                    string localPath = uri.LocalPath;
+                    string dir = GetDirectoryName(localPath);
+                    if (!System.IO.Directory.Exists(dir)) { System.IO.Directory.CreateDirectory(dir); }
+                    System.IO.File.Create(localPath + "." + lastModified.Ticks.ToString() + extend);
+                    return true;
                 }
-                return true;
+                return false;
             }
 
             public override long Position { get => IoStream.Position; set => IoStream.Position = value; }
@@ -239,6 +258,19 @@ namespace E.Data
             private int timeout;
 
             public override int Timeout { get => timeout; set => timeout = value; }
+
+            private string username;
+
+            private string password;
+
+            public override void SetUser(string username, string password)
+            {
+                if (!string.IsNullOrWhiteSpace(username) && !string.IsNullOrWhiteSpace(password))
+                {
+                    this.username = username;
+                    this.password = password;
+                }
+            }
 
             public override bool Exists { get => TestConnection();}
 
@@ -372,29 +404,26 @@ namespace E.Data
 
             public override int Timeout { get => timeout; set => timeout = value; }
 
-            public override bool Exists
+            private string username;
+
+            private string password;
+
+            public override void SetUser(string username, string password)
             {
-                get
+                if(!string.IsNullOrWhiteSpace(username) && !string.IsNullOrWhiteSpace(password))
                 {
-                    if (FileName == null || (FileName != null && !System.IO.File.Exists(FileName)))
-                    { RefreshFileName(); }
-                    return fileName != null;
+                    this.username = username;
+                    this.password = password;
                 }
             }
 
-            private bool ForceTestConnection()
-            {
-                return FileName != null;
-            }
+            //TODO 测试连接
+            public override bool Exists
+            { get { return RefreshFileName(); } }
 
             private const string extend = ".downloading";
 
             private static readonly Regex fileNameRegex = new Regex(@"(?:[/\\]{0,1}(?:[^/\\\:\?\*\<\>\|]+[/\\])+([^/\\\:\?\*\<\>\|]+(?:\.[^/\\\:\?\*\<\>\|]+){0,1}))");
-
-            private string fileName;
-
-            private string FileName
-            { get { if (fileName == null) { RefreshFileName(); } return fileName; } }
 
             public static string GetDirectoryName(string filePath)
             {
@@ -406,13 +435,21 @@ namespace E.Data
                 return fileNameRegex.Match(filePath).Groups[1].Value;
             }
 
-            private void RefreshFileName()
+            private string fileName;
+
+            private string FileName
+            { get { if (fileName == null) { RefreshFileName(); } return fileName; } }
+
+            private bool RefreshFileName()
             {
+                ResetFileTarget();
                 string absUri = uri.AbsoluteUri;
                 string fname = GetFileName(absUri);
                 string dirUri = GetDirectoryName(absUri);
                 string[] fileNames = GetFiles(dirUri);
-                fileName = GetNameFromArray(fname, fileNames);
+                string fromArr = GetNameFromArray(fname, fileNames);
+                if (fromArr != null) { fileName = dirUri + "/" + fromArr; }
+                return fileName != null;
             }
 
             private string GetNameFromArray(string name, string[] strs)
@@ -426,16 +463,149 @@ namespace E.Data
                 return null;
             }
 
-            private string username;
+            private void ResetFileTarget()
+            {
+                fileName = null;
+                length = -1;
+                position = 0;
+            }
 
-            private string password;
+            public override bool Complete
+            {
+                get
+                {
+                    string fn = FileName;
+                    return fn != null && !fn.EndsWith(extend);
+                }
+                set
+                {
+                    string fn = FileName;
+                    if (value && fn != null && fn.EndsWith(extend))
+                    {
+                        if(!Rename(fn, GetFileName(uri.AbsoluteUri)))
+                        { }
+                        ResetFileTarget();
+                    }
+                }
+            }
+
+            private long length = -1;
+
+            private long contentLength = 0;
+
+            public override long Length
+            {
+                get
+                {
+                    if (length == -1) { length = GetLength(FileName); }
+                    return length;
+                }
+                set { contentLength = value; }
+            }
+
+            private System.DateTime lastModified = System.DateTime.MinValue;
+
+            private static readonly System.Text.RegularExpressions.Regex LastModifiedRegex
+                = new System.Text.RegularExpressions.Regex(@".+(?:\.([0-9]+)\.downloading)$");
+
+            public override System.DateTime LastModified
+            {
+                get
+                {
+                    string fn = FileName;
+                    if (fn != null)
+                    {
+                        if (fn.EndsWith(extend))
+                        {
+                            System.Text.RegularExpressions.MatchCollection matchCollection = LastModifiedRegex.Matches(fn);
+                            if (matchCollection.Count > 0)
+                            {
+                                string val = matchCollection[0].Groups[1].Value;
+                                if (long.TryParse(val, out long lastmodifiedTick))
+                                { return new System.DateTime(lastmodifiedTick); }
+                            }
+                            return System.DateTime.MinValue;
+                        }
+                        else
+                        { return GetLastModified(fn); }
+                    }
+                    return System.DateTime.MinValue;
+                }
+                set
+                {
+                    string fn = FileName;
+                    if (fn != null)
+                    {
+                        if (fn.EndsWith(extend))
+                        { Rename(fn, GetFileName(uri.AbsoluteUri) + "." + value.Ticks.ToString() + extend); }
+                    }
+                    lastModified = value;
+                }
+            }
+
+            public override string Version
+            {
+                get
+                {
+                    System.DateTime lastTime = LastModified;
+                    return lastTime != System.DateTime.MinValue ? lastTime.Ticks.ToString() : null;
+                }
+            }
+
+            private long position;
+
+            public override long Position { get => position; set => position = value; }
+
+            public override bool Delete()
+            {
+                if(DeleteFile(FileName))
+                {
+                    ResetFileTarget();
+                    return true;
+                }
+                return false;
+            }
+
+            public override bool Create()
+            {
+                if(fileName == null && lastModified != System.DateTime.MinValue)
+                {
+                    return CreateFile(uri.AbsoluteUri + "." + lastModified.Ticks.ToString() + extend);
+                }
+                return false;
+            }
+
+            public override int Read(byte[] buffer, int offset, int count)
+            {
+                return ResponseStream.Read(buffer, offset, count);
+            }
+
+            public override void Write(byte[] buffer, int offset, int count)
+            {
+                RequestStream.Write(buffer, offset, count);
+            }
+
+            protected override void ReleaseManaged()
+            {
+                username = null;
+                password = null;
+                fileName = null;
+            }
+
+            protected override void ReleaseUnmanaged()
+            {
+                DisposeReqStream();
+                DisposeRspStream();
+                DisposeReqRsp();
+            }
 
             private System.Net.FtpWebRequest GetRequest(string uri, string mathod)
             {
                 System.Net.FtpWebRequest req = (System.Net.FtpWebRequest)System.Net.WebRequest.Create(uri);
                 req.Method = mathod;
                 req.Timeout = timeout;
-                //req.Credentials = new System.Net.NetworkCredential(username, password);
+                if(username != null && password != null)
+                req.Credentials = new System.Net.NetworkCredential(username, password);
                 req.KeepAlive = false;
                 req.UsePassive = false;
                 req.UseBinary = true;
@@ -475,7 +645,7 @@ namespace E.Data
             {
                 get
                 {
-                    if(responseStream != null)
+                    if (responseStream != null)
                     {
                         DisposeRspStream();
                         DisposeReqRsp();
@@ -502,7 +672,7 @@ namespace E.Data
             {
                 get
                 {
-                    if(requestStream != null)
+                    if (requestStream != null)
                     {
                         DisposeReqStream();
                         DisposeReqRsp();
@@ -518,70 +688,9 @@ namespace E.Data
                 }
             }
 
-            public override bool Complete
-            {
-                get { return FileName != null && !FileName.EndsWith(extend); }
-                set
-                {
-                    if (value && FileName != null && FileName.EndsWith(extend))
-                    {
-                        System.DateTime lastTime = LastModified;
-                        Rename(FileName, GetFileName(uri.AbsoluteUri));
-                        RefreshFileName();
-                        //fileInfo.LastWriteTime = lastTime;
-                        
-                    }
-                }
-            }
-
-            private long length = -1;
-
-            private long contentLength;
-
-            public override long Length
-            { get { return length == -1 ? 0 : length; } set { contentLength = value; } }
-
-            private System.DateTime lastModified;
-
-            public override System.DateTime LastModified 
-            {
-                get
-                {
-
-                    return System.DateTime.MinValue;
-                }
-                set
-                {
-
-                }
-            }
-
-            public override string Version
-            {
-                get
-                {
-                    System.DateTime lastTime = LastModified;
-                    return lastTime != System.DateTime.MinValue ? lastTime.Ticks.ToString() : null;
-                }
-            }
-
-            private long position;
-
-            public override long Position { get => position; set => position = value; }
-
-            public override bool Create()
-            {
-                return CreateFile(uri.AbsoluteUri);
-            }
-
-            public override bool Delete()
-            {
-                return DeleteFile(uri.AbsoluteUri);
-            }
-
-
             private string[] GetFiles(string dirUri)
             {
+                if (dirUri == null) return new string[0];
                 System.IO.StreamReader streamReader = null;
                 System.Net.FtpWebResponse ftpWebResponse = null;
                 System.Net.FtpWebRequest ftpWebRequest = null;
@@ -612,59 +721,11 @@ namespace E.Data
                 }
             }
 
-            private bool FileExists(string fileUri)
-            {
-                length = GetLength(fileUri);
-                if (length == -1) return false;
-                return true;
-            }
-
-            private bool CreateDir(string dirUri)
-            {
-                System.Net.FtpWebRequest ftpWebRequest = null;
-                System.Net.FtpWebResponse ftpWebResponse = null;
-                try
-                {
-                    ftpWebRequest = GetRequest(dirUri, System.Net.WebRequestMethods.Ftp.MakeDirectory);
-                    ftpWebResponse = GetResponse(ftpWebRequest);
-                    return true;
-                }
-                catch (System.Exception e)
-                {
-                    DataProcessorDebug.LogException(e);
-                    return false;
-                }
-                finally
-                {
-                    ftpWebResponse?.Dispose();
-                    ftpWebRequest?.Abort();
-                }
-            }
-
-            private bool DeleteDir(string dirUri)
-            {
-                System.Net.FtpWebRequest ftpWebRequest = null;
-                System.Net.FtpWebResponse ftpWebResponse = null;
-                try
-                {
-                    ftpWebRequest = GetRequest(dirUri, System.Net.WebRequestMethods.Ftp.RemoveDirectory);
-                    ftpWebResponse = GetResponse(ftpWebRequest);
-                    return true;
-                }
-                catch (System.Exception e)
-                {
-                    DataProcessorDebug.LogException(e);
-                    return false;
-                }
-                finally
-                {
-                    ftpWebResponse?.Dispose();
-                    ftpWebRequest?.Abort();
-                }
-            }
-
             private bool CreateFile(string fileUri)
             {
+                if (fileUri == null) return false;
+                string dirname = GetDirectoryName(fileUri);
+                if (!CreateDir(dirname)) { return false; }
                 System.Net.FtpWebRequest ftpWebRequest = null;
                 System.Net.FtpWebResponse ftpWebResponse = null;
                 try
@@ -685,8 +746,80 @@ namespace E.Data
                 }
             }
 
+            private static readonly Regex hostRegex = new Regex(@"^(?:ftp://[^/\\]+)$");
+
+            private bool CreateDir(string dirUri)
+            {
+                if (dirUri == null) return false;
+                if (hostRegex.IsMatch(dirUri)) return true;
+                string baseName = GetDirectoryName(dirUri);
+                if (!CreateDir(baseName)) { return false; }
+                if (!BasedDirExists(dirUri) && !BasedDirCreate(dirUri)) { return false; }
+                return true;
+            }
+
+            private bool BasedDirExists(string dirUri)
+            {
+                if (dirUri == null) return false;
+                System.Net.FtpWebRequest ftpWebRequest = null;
+                System.Net.FtpWebResponse ftpWebResponse = null;
+                System.IO.StreamReader streamReader = null;
+                try
+                {
+                    string dir = GetDirectoryName(dirUri);
+                    ftpWebRequest = GetRequest(dir, System.Net.WebRequestMethods.Ftp.ListDirectory);
+                    ftpWebResponse = GetResponse(ftpWebRequest);
+                    streamReader = new System.IO.StreamReader(GetResponseStream(ftpWebResponse));
+                    string name = GetFileName(dirUri);
+                    string line = null;
+                    while ((line = streamReader.ReadLine()) != null)
+                    {
+                        if (line == name)
+                        {
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+                catch (System.Exception e)
+                {
+                    DataProcessorDebug.LogException(e);
+                    return false;
+                }
+                finally
+                {
+                    streamReader?.Dispose();
+                    ftpWebResponse?.Dispose();
+                    ftpWebRequest?.Abort();
+                }
+            }
+
+            private bool BasedDirCreate(string dirUri)
+            {
+                if (dirUri == null) return false;
+                System.Net.FtpWebRequest ftpWebRequest = null;
+                System.Net.FtpWebResponse ftpWebResponse = null;
+                try
+                {
+                    ftpWebRequest = GetRequest(dirUri, System.Net.WebRequestMethods.Ftp.MakeDirectory);
+                    ftpWebResponse = GetResponse(ftpWebRequest);
+                    return true;
+                }
+                catch (System.Exception e)
+                {
+                    DataProcessorDebug.LogException(e);
+                    return false;
+                }
+                finally
+                {
+                    ftpWebResponse?.Dispose();
+                    ftpWebRequest?.Abort();
+                }
+            }
+
             private bool DeleteFile(string fileUri)
             {
+                if (fileUri == null) return false;
                 System.Net.FtpWebRequest ftpWebRequest = null;
                 System.Net.FtpWebResponse ftpWebResponse = null;
                 try
@@ -709,6 +842,7 @@ namespace E.Data
 
             private bool Rename(string fileUri, string toName)
             {
+                if (fileUri == null || toName == null) return false;
                 System.Net.FtpWebRequest ftpWebRequest = null;
                 System.Net.FtpWebResponse ftpWebResponse = null;
                 try
@@ -732,6 +866,7 @@ namespace E.Data
 
             private long GetLength(string fileUri)
             {
+                if (fileUri == null) return -1;
                 System.Net.FtpWebRequest ftpWebRequest = null;
                 System.Net.FtpWebResponse ftpWebResponse = null;
                 long length = -1;
@@ -755,6 +890,7 @@ namespace E.Data
 
             private System.DateTime GetLastModified(string fileUri)
             {
+                if (fileUri == null) return System.DateTime.MinValue;
                 System.Net.FtpWebRequest ftpWebRequest = null;
                 System.Net.FtpWebResponse ftpWebResponse = null;
                 try
@@ -774,28 +910,6 @@ namespace E.Data
                     ftpWebResponse?.Dispose();
                     ftpWebRequest?.Abort();
                 }
-            }
-
-            public override int Read(byte[] buffer, int offset, int count)
-            {
-                return ResponseStream.Read(buffer, offset, count);
-            }
-
-            public override void Write(byte[] buffer, int offset, int count)
-            {
-                RequestStream.Write(buffer, offset, count);
-            }
-
-            protected override void ReleaseManaged()
-            {
-                
-            }
-
-            protected override void ReleaseUnmanaged()
-            {
-                DisposeReqStream();
-                DisposeRspStream();
-                DisposeReqRsp();
             }
         }
     }

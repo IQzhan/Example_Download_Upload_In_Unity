@@ -10,6 +10,13 @@
         protected System.Uri uri;
 
         /// <summary>
+        /// set username and password
+        /// </summary>
+        /// <param name="username"></param>
+        /// <param name="password"></param>
+        public abstract void SetUser(string username, string password);
+
+        /// <summary>
         /// connection timeout
         /// </summary>
         public abstract int Timeout { get; set; }
@@ -59,16 +66,6 @@
         /// set: if data can be seek
         /// </summary>
         public abstract long Position { get; set; }
-
-        /// <summary>
-        /// true if data can be read
-        /// </summary>
-        //public abstract bool CanRead { get; }
-
-        /// <summary>
-        /// true if data can be write
-        /// </summary>
-        //public abstract bool CanWrite { get; }
 
         /// <summary>
         /// write data if CanWrite is true
