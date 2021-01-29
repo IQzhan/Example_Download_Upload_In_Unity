@@ -55,20 +55,47 @@ namespace E
 
         private void TestDownload()
         {
-
-            //System.Uri uri0 = new System.Uri(@"ftp://localhost/httpResp.txt");
-            //StandaloneStreamFactory factory = new StandaloneStreamFactoryInstance();
-            //DataStream dataStream = factory.GetStream(uri0);
-            //dataStream.Timeout = 5 * 1000;
-            //bool exists = dataStream.Exists;
-            //bool deleted = dataStream.Delete();
-            //Debug.LogError(deleted);
-            //dataStream.LastModified = System.DateTime.Now;
-            //bool created = dataStream.Create();
-            //Debug.LogError(created);
-            //dataStream.Dispose();
+            Task task = Task.Run(() => 
+            {
+                StandaloneStreamFactory factory = null;
+                DataStream dataStream = null;
+                try
+                {
+                    System.Uri uri0 = new System.Uri(@"ftp://localhost/suckmydick/吃鸡吧.txt");
+                    System.Uri uri1 = new System.Uri(@"ftp://localhost/吃鸡吧1.txt");
+                    factory = new StandaloneStreamFactoryInstance();
+                    dataStream = factory.GetStream(uri0);
+                    dataStream.Timeout = 5 * 1000;
+                    bool exists = dataStream.Exists;
+                    Debug.LogError(exists);
+                    //if (exists)
+                    //{
+                    //    bool deleted = dataStream.Delete();
+                    //    Debug.LogError(deleted);
+                    //}
+                    dataStream.LastModified = System.DateTime.Now;
+                    bool created = dataStream.Create();
+                    Debug.LogError(created);
+                    dataStream.Complete = true;
+                    //string text = "我日你妈嗨";
+                    //byte[] data = System.Text.ASCIIEncoding.UTF8.GetBytes(text);
+                    //dataStream.Length = data.Length;
+                    //dataStream.Write(data, 0, data.Length);
+                    //dataStream.Complete = true;
+                }
+                catch(System.Exception e)
+                {
+                    Debug.LogException(e);
+                }
+                finally
+                {
+                    dataStream?.Dispose();
+                    factory?.Dispose();
+                }
+            });
 
         }
+
         private static readonly Regex fileNameRegex = new Regex(@"(?:[/\\]{0,1}(?:[^/\\\:\?\*\<\>\|]+[/\\])+([^/\\\:\?\*\<\>\|]+(?:\.[^/\\\:\?\*\<\>\|]+){0,1}))");
 
         public static string GetDirectoryName(string filePath)
@@ -84,6 +111,7 @@ namespace E
         private System.Net.FtpWebRequest GetRequest(string uri, string mathod)
         {
             System.Net.FtpWebRequest req = (System.Net.FtpWebRequest)System.Net.WebRequest.Create(uri);
+            if (req == null) return null;
             req.Method = mathod;
             req.KeepAlive = false;
             req.UsePassive = false;

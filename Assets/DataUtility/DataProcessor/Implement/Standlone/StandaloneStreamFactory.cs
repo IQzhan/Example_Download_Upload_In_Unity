@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace E.Data
@@ -17,12 +16,11 @@ namespace E.Data
             else if((uri.Scheme == System.Uri.UriSchemeHttp) || (uri.Scheme == System.Uri.UriSchemeHttp))
             { return new HttpStream(uri, this); }
             else if(uri.Scheme == System.Uri.UriSchemeFtp)
-            { return new FtpStream(uri); }
+            { return new FtpStream(uri, this); }
             else { throw new System.ArgumentException("Unsupported uri scheme.", "uri"); }
         }
 
         private ConcurrentDictionary<string, bool> testedHostConnection = new ConcurrentDictionary<string, bool>();
-
 
         protected override void ReleaseManaged()
         {
@@ -398,7 +396,9 @@ namespace E.Data
 
         private class FtpStream : DataStream
         {
-            public FtpStream(in System.Uri uri) : base(uri) { }
+            public FtpStream(in System.Uri uri, StandaloneStreamFactory factory) : base(uri) { this.factory = factory;  }
+            
+            private StandaloneStreamFactory factory;
 
             private int timeout;
 
@@ -411,29 +411,61 @@ namespace E.Data
             public override void SetUser(string username, string password)
             {
                 if(!string.IsNullOrWhiteSpace(username) && !string.IsNullOrWhiteSpace(password))
+                { this.username = username; this.password = password; }
+            }
+
+            public override bool Exists
+            { get { return TestConnection() && RefreshFileName(); } }
+
+            private static readonly Regex HostUriRegex = new Regex(@"ftp://[^/\\]+");
+
+            private bool TestConnection()
+            { return TestHostConnection(HostUriRegex.Match(uri.AbsoluteUri).Value); }
+
+            private bool TestHostConnection(string hostUri)
+            {
+                lock (string.Intern(hostUri))
                 {
-                    this.username = username;
-                    this.password = password;
+                    if(factory.testedHostConnection.TryGetValue(hostUri, out bool val)) { return val; }
+                    else { return factory.testedHostConnection[hostUri] = ForceTestConnection(hostUri); }
                 }
             }
 
-            //TODO 测试连接
-            public override bool Exists
-            { get { return RefreshFileName(); } }
+            private bool ForceTestConnection(string hostUri)
+            {
+                System.Net.FtpWebRequest testRequest = null;
+                System.Net.FtpWebResponse testResponse = null;
+                try
+                {
+                    testRequest = GetRequest(hostUri, System.Net.WebRequestMethods.Ftp.ListDirectory);
+                    if (testRequest == null) return false;
+                    testResponse = GetResponse(testRequest);
+                    if (testResponse == null) return false;
+                    return true;
+                }
+                catch (System.Net.WebException e)
+                {
+                    DataProcessorDebug.LogError("cause an connection error at: " + hostUri + Environment.NewLine + e.Message + Environment.NewLine + e.StackTrace);
+                    return false;
+                }
+                finally
+                {
+                    testRequest?.Abort();
+                    testResponse?.Dispose();
+                }
+            }
 
             private const string extend = ".downloading";
+
+            private const string slash = "/";
 
             private static readonly Regex fileNameRegex = new Regex(@"(?:[/\\]{0,1}(?:[^/\\\:\?\*\<\>\|]+[/\\])+([^/\\\:\?\*\<\>\|]+(?:\.[^/\\\:\?\*\<\>\|]+){0,1}))");
 
             public static string GetDirectoryName(string filePath)
-            {
-                return filePath.Substring(0, filePath.Length - GetFileName(filePath).Length - 1);
-            }
+            { return filePath.Substring(0, filePath.Length - GetFileName(filePath).Length - 1); }
 
             public static string GetFileName(string filePath)
-            {
-                return fileNameRegex.Match(filePath).Groups[1].Value;
-            }
+            { return fileNameRegex.Match(filePath).Groups[1].Value; }
 
             private string fileName;
 
@@ -443,12 +475,13 @@ namespace E.Data
             private bool RefreshFileName()
             {
                 ResetFileTarget();
-                string absUri = uri.AbsoluteUri;
+                string absUri = uri.OriginalString;
                 string fname = GetFileName(absUri);
                 string dirUri = GetDirectoryName(absUri);
                 string[] fileNames = GetFiles(dirUri);
+                if (fileNames == null || fileNames.Length == 0) return false;
                 string fromArr = GetNameFromArray(fname, fileNames);
-                if (fromArr != null) { fileName = dirUri + "/" + fromArr; }
+                if (fromArr != null) { fileName = dirUri + slash + fromArr; }
                 return fileName != null;
             }
 
@@ -482,8 +515,7 @@ namespace E.Data
                     string fn = FileName;
                     if (value && fn != null && fn.EndsWith(extend))
                     {
-                        if(!Rename(fn, GetFileName(uri.AbsoluteUri)))
-                        { }
+                        if(!Rename(fn, GetFileName(uri.OriginalString))) { }
                         ResetFileTarget();
                     }
                 }
@@ -522,14 +554,13 @@ namespace E.Data
                             {
                                 string val = matchCollection[0].Groups[1].Value;
                                 if (long.TryParse(val, out long lastmodifiedTick))
-                                { return new System.DateTime(lastmodifiedTick); }
+                                { lastModified = new System.DateTime(lastmodifiedTick); }
                             }
-                            return System.DateTime.MinValue;
                         }
                         else
-                        { return GetLastModified(fn); }
+                        { lastModified = GetLastModified(fn); }
                     }
-                    return System.DateTime.MinValue;
+                    return lastModified;
                 }
                 set
                 {
@@ -537,7 +568,7 @@ namespace E.Data
                     if (fn != null)
                     {
                         if (fn.EndsWith(extend))
-                        { Rename(fn, GetFileName(uri.AbsoluteUri) + "." + value.Ticks.ToString() + extend); }
+                        { Rename(fn, GetFileName(uri.OriginalString) + "." + value.Ticks.ToString() + extend); }
                     }
                     lastModified = value;
                 }
@@ -558,20 +589,14 @@ namespace E.Data
 
             public override bool Delete()
             {
-                if(DeleteFile(FileName))
-                {
-                    ResetFileTarget();
-                    return true;
-                }
+                if(DeleteFile(FileName)) { ResetFileTarget(); return true; }
                 return false;
             }
 
             public override bool Create()
             {
-                if(fileName == null && lastModified != System.DateTime.MinValue)
-                {
-                    return CreateFile(uri.AbsoluteUri + "." + lastModified.Ticks.ToString() + extend);
-                }
+                if(fileName == null && LastModified != System.DateTime.MinValue)
+                { return CreateFile(uri.AbsoluteUri + "." + lastModified.Ticks.ToString() + extend); }
                 return false;
             }
 
@@ -590,6 +615,7 @@ namespace E.Data
                 username = null;
                 password = null;
                 fileName = null;
+                factory = null;
             }
 
             protected override void ReleaseUnmanaged()
@@ -601,11 +627,12 @@ namespace E.Data
 
             private System.Net.FtpWebRequest GetRequest(string uri, string mathod)
             {
-                System.Net.FtpWebRequest req = (System.Net.FtpWebRequest)System.Net.WebRequest.Create(uri);
+                System.Net.FtpWebRequest req = System.Net.WebRequest.Create(uri) as System.Net.FtpWebRequest;
+                if (req == null) return null;
                 req.Method = mathod;
                 req.Timeout = timeout;
                 if(username != null && password != null)
-                req.Credentials = new System.Net.NetworkCredential(username, password);
+                { req.Credentials = new System.Net.NetworkCredential(username, password); }
                 req.KeepAlive = false;
                 req.UsePassive = false;
                 req.UseBinary = true;
@@ -613,7 +640,7 @@ namespace E.Data
             }
 
             private System.Net.FtpWebResponse GetResponse(System.Net.FtpWebRequest request)
-            { return (System.Net.FtpWebResponse)request.GetResponse(); }
+            { return request.GetResponse() as System.Net.FtpWebResponse; }
 
             private System.IO.Stream GetRequestStream(System.Net.FtpWebRequest request)
             { return request.GetRequestStream(); }
@@ -652,9 +679,12 @@ namespace E.Data
                     }
                     if (requestStream == null)
                     {
-                        webRequest = GetRequest(uri.AbsoluteUri, System.Net.WebRequestMethods.Ftp.AppendFile);
+                        webRequest = GetRequest(FileName, System.Net.WebRequestMethods.Ftp.AppendFile);
+                        if (webRequest == null) return null;
                         webRequest.ContentLength = contentLength;
                         requestStream = GetRequestStream(webRequest);
+                        webResponse = GetResponse(webRequest);
+                        if (webResponse == null) return null;
                     }
                     return requestStream;
                 }
@@ -679,9 +709,11 @@ namespace E.Data
                     }
                     if (responseStream == null)
                     {
-                        webRequest = GetRequest(uri.AbsoluteUri, System.Net.WebRequestMethods.Ftp.DownloadFile);
+                        webRequest = GetRequest(FileName, System.Net.WebRequestMethods.Ftp.DownloadFile);
+                        if (webRequest == null) return null;
                         webRequest.ContentOffset = position;
                         webResponse = GetResponse(webRequest);
+                        if (webResponse == null) return null;
                         responseStream = GetResponseStream(webResponse);
                     }
                     return responseStream;
@@ -690,28 +722,38 @@ namespace E.Data
 
             private string[] GetFiles(string dirUri)
             {
-                if (dirUri == null) return new string[0];
+                if (dirUri == null) return null;
                 System.IO.StreamReader streamReader = null;
                 System.Net.FtpWebResponse ftpWebResponse = null;
                 System.Net.FtpWebRequest ftpWebRequest = null;
                 try
                 {
-                    if (!dirUri.EndsWith("/")) dirUri += "/";
+                    if (!dirUri.EndsWith(slash)) dirUri += slash;
                     ftpWebRequest = GetRequest(dirUri, System.Net.WebRequestMethods.Ftp.ListDirectory);
+                    if(ftpWebRequest == null) return null;
                     ftpWebResponse = GetResponse(ftpWebRequest);
-                    streamReader = new System.IO.StreamReader(ftpWebResponse.GetResponseStream(), true);
+                    if (ftpWebResponse == null) return null;
+                    System.IO.Stream responseStream = ftpWebResponse.GetResponseStream();
+                    if (responseStream == null) return null;
+                    streamReader = new System.IO.StreamReader(responseStream, true);
+                    if (streamReader == null) return null;
                     string line = null;
                     List<string> lines = new List<string>();
                     while ((line = streamReader.ReadLine()) != null)
-                    {
-                        lines.Add(line);
-                    }
-                    return lines.ToArray();
+                    { lines.Add(line); }
+                    return lines.Count > 0 ? lines.ToArray() : null;
                 }
-                catch (System.Exception e)
+                catch (System.Net.WebException e)
                 {
-                    DataProcessorDebug.LogException(e);
-                    return new string[0];
+                    if (ftpWebResponse == null)
+                        ftpWebResponse = e.Response as System.Net.FtpWebResponse;
+                    switch (ftpWebResponse.StatusCode)
+                    {
+                        case System.Net.FtpStatusCode.ActionNotTakenFileUnavailable:
+                        case System.Net.FtpStatusCode.ActionNotTakenFileUnavailableOrBusy:
+                            return null;
+                        default: throw e;
+                    }
                 }
                 finally
                 {
@@ -731,13 +773,23 @@ namespace E.Data
                 try
                 {
                     ftpWebRequest = GetRequest(fileUri, System.Net.WebRequestMethods.Ftp.AppendFile);
+                    if (ftpWebRequest == null) return false;
                     ftpWebResponse = GetResponse(ftpWebRequest);
+                    if (ftpWebResponse == null) return false;
                     return true;
                 }
-                catch (System.Exception e)
+                catch (System.Net.WebException e)
                 {
-                    DataProcessorDebug.LogException(e);
-                    return false;
+                    if (ftpWebResponse == null)
+                        ftpWebResponse = e.Response as System.Net.FtpWebResponse;
+                    switch (ftpWebResponse.StatusCode)
+                    {
+                        case System.Net.FtpStatusCode.ActionNotTakenFileUnavailable:
+                        case System.Net.FtpStatusCode.ActionNotTakenFileUnavailableOrBusy:
+                        case System.Net.FtpStatusCode.ActionNotTakenFilenameNotAllowed:
+                            return false;
+                        default: throw e;
+                    }
                 }
                 finally
                 {
@@ -747,6 +799,16 @@ namespace E.Data
             }
 
             private static readonly Regex hostRegex = new Regex(@"^(?:ftp://[^/\\]+)$");
+
+            //TODO  文件存在
+            private bool FileExists(string fileUri)
+            {
+                if (fileUri == null) return false;
+                if (hostRegex.IsMatch(fileUri)) return true;
+                string baseName = GetDirectoryName(fileUri);
+                if (!FileExists(baseName)) return false;
+                return true;
+            }
 
             private bool CreateDir(string dirUri)
             {
@@ -768,23 +830,23 @@ namespace E.Data
                 {
                     string dir = GetDirectoryName(dirUri);
                     ftpWebRequest = GetRequest(dir, System.Net.WebRequestMethods.Ftp.ListDirectory);
+                    if (ftpWebRequest == null) return false;
                     ftpWebResponse = GetResponse(ftpWebRequest);
-                    streamReader = new System.IO.StreamReader(GetResponseStream(ftpWebResponse));
+                    if (ftpWebResponse == null) return false;
+                    //TODO STATUSCODE
+                    System.IO.Stream respStream = GetResponseStream(ftpWebResponse);
+                    if (respStream == null) return false;
+                    streamReader = new System.IO.StreamReader(respStream);
+                    if (streamReader == null) return false;
                     string name = GetFileName(dirUri);
                     string line = null;
                     while ((line = streamReader.ReadLine()) != null)
-                    {
-                        if (line == name)
-                        {
-                            return true;
-                        }
-                    }
+                    { if (line == name) { return true; } }
                     return false;
                 }
                 catch (System.Exception e)
                 {
-                    DataProcessorDebug.LogException(e);
-                    return false;
+                    throw e;
                 }
                 finally
                 {
@@ -802,13 +864,15 @@ namespace E.Data
                 try
                 {
                     ftpWebRequest = GetRequest(dirUri, System.Net.WebRequestMethods.Ftp.MakeDirectory);
+                    if (ftpWebRequest == null) return false;
                     ftpWebResponse = GetResponse(ftpWebRequest);
+                    if (ftpWebResponse == null) return false;
+                    //TODO statuscode
                     return true;
                 }
                 catch (System.Exception e)
                 {
-                    DataProcessorDebug.LogException(e);
-                    return false;
+                    throw e;
                 }
                 finally
                 {
@@ -825,13 +889,15 @@ namespace E.Data
                 try
                 {
                     ftpWebRequest = GetRequest(fileUri, System.Net.WebRequestMethods.Ftp.DeleteFile);
+                    if (ftpWebRequest == null) return false;
                     ftpWebResponse = GetResponse(ftpWebRequest);
+                    if (ftpWebResponse == null) return false;
+                    //TODO statuscode
                     return true;
                 }
                 catch (System.Exception e)
                 {
-                    DataProcessorDebug.LogException(e);
-                    return false;
+                    throw e;
                 }
                 finally
                 {
@@ -848,14 +914,16 @@ namespace E.Data
                 try
                 {
                     ftpWebRequest = GetRequest(fileUri, System.Net.WebRequestMethods.Ftp.Rename);
+                    if (ftpWebRequest == null) return false;
                     ftpWebRequest.RenameTo = toName;
                     ftpWebResponse = GetResponse(ftpWebRequest);
+                    if (ftpWebResponse == null) return false;
+                    //TODO statuscode
                     return true;
                 }
                 catch (System.Exception e)
                 {
-                    DataProcessorDebug.LogException(e);
-                    return false;
+                    throw e;
                 }
                 finally
                 {
@@ -873,12 +941,15 @@ namespace E.Data
                 try
                 {
                     ftpWebRequest = GetRequest(fileUri, System.Net.WebRequestMethods.Ftp.GetFileSize);
+                    if (ftpWebRequest == null) return -1;
                     ftpWebResponse = GetResponse(ftpWebRequest);
+                    if (ftpWebResponse == null) return -1;
+                    //TODO statuscode
                     length = ftpWebResponse.ContentLength; 
                 }
                 catch (System.Exception e)
                 {
-                    DataProcessorDebug.LogException(e);
+                    throw e;
                 }
                 finally
                 {
@@ -896,14 +967,16 @@ namespace E.Data
                 try
                 {
                     ftpWebRequest = GetRequest(fileUri, System.Net.WebRequestMethods.Ftp.GetDateTimestamp);
+                    if(ftpWebRequest == null) return System.DateTime.MinValue;
                     ftpWebResponse = GetResponse(ftpWebRequest);
+                    if(ftpWebResponse == null) return System.DateTime.MinValue;
+                    //TODO statuscode
                     System.DateTime lastModified = ftpWebResponse.LastModified;
                     return lastModified;
                 }
                 catch (System.Exception e)
                 {
-                    DataProcessorDebug.LogException(e);
-                    return System.DateTime.MinValue;
+                    throw e;
                 }
                 finally
                 {
