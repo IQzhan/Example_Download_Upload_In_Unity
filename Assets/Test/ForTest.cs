@@ -1,5 +1,6 @@
 ﻿using E.Data;
 using System.Collections.Generic;
+using System.IO;
 using System.Net;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -70,6 +71,7 @@ namespace E
             cloneAsyncOperation = dataProcessor.Clone(
                 @"http://localhost:4406/StreamingAssets/Data/files.data",
                 @"file:///E:/Downloads/fuckme.data");
+            
             
 
             //Task task = Task.Run(() => 

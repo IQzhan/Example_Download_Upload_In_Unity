@@ -10,7 +10,7 @@ namespace E.Data
         {
             public override bool IsEnded()
             {
-                return task.IsCompleted || task.IsCanceled || task.IsFaulted;
+                return task != null && (task.IsCompleted || task.IsCanceled || task.IsFaulted);
             }
 
             private Task task;
@@ -26,10 +26,6 @@ namespace E.Data
                     catch (System.Exception e)
                     {
                         DataProcessorDebug.LogException(e);
-                    }
-                    finally
-                    {
-                        task = null;
                     }
                 });
             }
