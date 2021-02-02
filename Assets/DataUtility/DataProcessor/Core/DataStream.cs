@@ -14,7 +14,7 @@
         /// </summary>
         /// <param name="username"></param>
         /// <param name="password"></param>
-        public abstract void SetUser(string username, string password);
+        public abstract void SetAccount(string username, string password);
 
         /// <summary>
         /// connection timeout
@@ -22,7 +22,12 @@
         public abstract int Timeout { get; set; }
 
         /// <summary>
-        /// test connection and return true if successed, save the connection result
+        /// test host connection and return true if successed, save the connection result
+        /// </summary>
+        public abstract bool TestConnection();
+
+        /// <summary>
+        /// test connection and return true if successed.
         /// </summary>
         public abstract bool Exists { get; }
 
@@ -46,7 +51,7 @@
         /// <summary>
         /// length of data
         /// </summary>
-        public abstract long Length { get; set; }
+        public abstract long Length { get; }
 
         /// <summary>
         /// last modified time milliseconds of data,

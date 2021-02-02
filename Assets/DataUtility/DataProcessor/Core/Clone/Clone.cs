@@ -129,6 +129,7 @@
                             asyncOperation.IsConnecting = true;
                             if (sourceStream != null) sourceStream.Timeout = asyncOperation.Timeout;
                             if (targetStream != null) targetStream.Timeout = asyncOperation.Timeout;
+                            bool targetAllowed = targetStream != null && targetStream.TestConnection();
                             bool sourceExists = sourceStream != null && sourceStream.Exists;
                             bool targetExists = targetStream != null && targetStream.Exists;
                             if(!sourceExists && !targetExists)
@@ -136,16 +137,16 @@
                             string sourceVersion = sourceExists ? sourceStream.Version : null;
                             string targetVersion = targetExists ? targetStream.Version : null;
                             bool versionChanged = sourceExists && ((sourceVersion == null) || (sourceVersion != targetVersion));
+                            DataProcessorDebug.LogError("enter here " + sourceExists + " " + targetExists + " " + sourceVersion + " " + targetVersion);
                             if (targetExists && versionChanged)
                             { 
                                 if (!targetStream.Delete()) return; 
                                 targetExists = false; 
                             }
-                            if (sourceExists && targetStream != null && !targetExists)
+                            if (targetAllowed && sourceExists && targetStream != null && !targetExists)
                             {
                                 targetStream.LastModified = sourceStream.LastModified;
                                 if (!targetStream.Create()) return;
-                                targetStream.LastModified = sourceStream.LastModified;
                                 targetExists = true;
                             }
                             bool complete = targetExists && targetStream.Complete;
