@@ -59,8 +59,6 @@
 
             public new long ProcessedBytes { get { return base.ProcessedBytes; } set { base.ProcessedBytes = value; } }
 
-            public new bool IsConnecting { get { return base.IsConnecting; } set { base.IsConnecting = value; } }
-
             public new bool IsError { get { return base.IsError; } set { base.IsError = value; } }
         }
     }

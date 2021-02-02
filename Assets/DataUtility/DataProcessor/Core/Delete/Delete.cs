@@ -33,7 +33,8 @@
                         catch (System.Exception e)
                         {
                             asyncOperation.IsError = true;
-                            DataProcessorDebug.LogException(e);
+                            DataProcessorDebug.LogError("cause an error while delete from " + targetStream.uri
+                                + System.Environment.NewLine + e.Message + System.Environment.NewLine + e.StackTrace);
                         }
                     }
                     void cleanTask()
@@ -51,6 +52,5 @@
             }
             return asyncOperation;
         }
-
     }
 }

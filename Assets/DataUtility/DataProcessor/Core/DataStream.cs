@@ -7,7 +7,7 @@
             this.uri = uri;
         }
 
-        protected System.Uri uri;
+        public System.Uri uri;
 
         /// <summary>
         /// set username and password
