@@ -25,6 +25,11 @@
         public bool IsError { get; protected set; } = false;
 
         /// <summary>
+        /// connecting to source uri?
+        /// </summary>
+        public bool IsConnecting { get { return IsWorking && !IsProcessing; } }
+
+        /// <summary>
         /// task is processing
         /// </summary>
         public bool IsProcessing { get { return IsWorking && Progress > 0 && Progress < 1; } }

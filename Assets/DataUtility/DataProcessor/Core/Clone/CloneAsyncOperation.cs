@@ -2,22 +2,23 @@
 {
     public class CloneAsyncOperation : AsyncOperation
     {
-        public struct User
+        public struct Account
         {
             public string username;
             public string password;
         }
 
-        public User sourceUser;
+        public Account sourceAccount;
 
-        public User targetUser;
+        public Account targetAccount;
 
         protected CloneAsyncOperation() { }
 
         public int Timeout = 5 * 1000;
 
-        public int MaxRetryTime = 12;
-
+        /// <summary>
+        /// TODO ?
+        /// </summary>
         public bool ForceTestConnection
         { 
             get { return forceTestConnection; } 
@@ -28,6 +29,9 @@
             } 
         }
 
+        /// <summary>
+        /// load data while downloading?
+        /// </summary>
         public bool LoadData
         {
             get { return loadData; }
@@ -38,6 +42,9 @@
             }
         }
 
+        /// <summary>
+        /// loaded data if LoadData is true
+        /// </summary>
         public byte[] Data { get; protected set; }
 
         /// <summary>
@@ -45,19 +52,13 @@
         /// </summary>
         public override void Close()
         {
-            IsConnecting = false;
             base.Close();
         }
 
         /// <summary>
-        /// connecting to source uri?
-        /// </summary>
-        public bool IsConnecting { get; protected set; } = false;
-
-        /// <summary>
         /// Size of data bytes
         /// </summary>
-        public long Size { get; protected set; }
+        public long Size { get; protected set; } = -1;
 
         /// <summary>
         /// processed data bytes
@@ -67,7 +68,7 @@
         /// <summary>
         /// progress of this task [0, 1]
         /// </summary>
-        public override double Progress { get { return (double)ProcessedBytes / Size; } }
+        public override double Progress { get { return (Size > -1) ? ((double)ProcessedBytes / Size) : 0; } }
 
         /// <summary>
         /// speed byte/second

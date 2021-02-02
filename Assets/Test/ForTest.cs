@@ -17,8 +17,6 @@ namespace E
             DontDestroyOnLoad(new GameObject("ForTest").AddComponent<ForTest>());
         }
 
-        private readonly System.Uri cacheUri = new System.Uri(@"E:\Downloads\");
-
         private DataProcessor dataProcessor;
 
         private CloneAsyncOperation cloneAsyncOperation;
@@ -62,7 +60,7 @@ namespace E
             {
                 Debug.LogException(exception);
             });
-            dataProcessor = new StandaloneDataProcessor(cacheUri);
+            dataProcessor = new StandaloneDataProcessor();
         }
 
         private void TestDownload()
@@ -72,7 +70,7 @@ namespace E
                 @"http://localhost:4406/StreamingAssets/Data/files.data",
                 @"file:///E:/Downloads/fuckme.data");
             
-            
+
 
             //Task task = Task.Run(() => 
             //{

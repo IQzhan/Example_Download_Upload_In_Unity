@@ -10,28 +10,14 @@
         public long MaxCommandDeltaTick
         { get { return commandHandler.MaxFrameMilliseconds; } set { commandHandler.MaxFrameMilliseconds = value; } }
 
-        private System.Uri cacheUri;
-
-        public System.Uri CacheUri
-        {
-            get { return cacheUri; }
-            set
-            {
-                if (!(value != null && value.IsAbsoluteUri && value.IsFile))
-                    throw new System.ArgumentException("must be absolute file uri", "CacheUri");
-                cacheUri = value;
-            }
-        }
-
         private TaskHandler taskHandler;
 
         private DataStreamFactory streamFactory;
 
         private CommandHandler commandHandler;
 
-        public DataProcessor(System.Uri CacheUri, TaskHandler taskHandler, DataStreamFactory streamFactory)
+        public DataProcessor(TaskHandler taskHandler, DataStreamFactory streamFactory)
         {
-            this.CacheUri = CacheUri;
             this.taskHandler = taskHandler;
             this.streamFactory = streamFactory;
             commandHandler = new CommandHandlerInstance();
@@ -56,7 +42,6 @@
             {
                 if (disposing)
                 {
-                    cacheUri = null;
                 }
                 taskHandler.Dispose();
                 streamFactory.Dispose();

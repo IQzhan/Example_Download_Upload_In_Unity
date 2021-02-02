@@ -9,6 +9,8 @@ namespace E.Data
         {
             public System.Action bodyAction;
             public System.Action cleanAction;
+            //TODO
+            public System.Action<bool> isClosed;
             public abstract void RunTask();
             public abstract void RunClear();
             public abstract bool IsEnded();
@@ -90,9 +92,7 @@ namespace E.Data
         private void ClearQueue()
         {
             while (!actionQueue.IsEmpty && actionQueue.TryDequeue(out ITask task))
-            {
-                task.RunClear();
-            }
+            { task.RunClear(); }
             actionQueue = null;
         }
 
