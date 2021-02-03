@@ -32,9 +32,9 @@
                             if (targetStream.TestConnection())
                             { asyncOperation.Progress = 0.1f; }
                             else throw new System.Exception(@"connecting faild.");
-                            bool exists = targetStream.Exists;
-                            if (!exists || (exists && targetStream.Delete()))
-                            { asyncOperation.Progress = 1; }//todo?
+                            if (targetStream.Exists && targetStream.Delete())
+                            { asyncOperation.Progress = 1; }
+                            else throw new System.Exception(@"delete faild.");
                         }
                         catch (System.Exception e)
                         {

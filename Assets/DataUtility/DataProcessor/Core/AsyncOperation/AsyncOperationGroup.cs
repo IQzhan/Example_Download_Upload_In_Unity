@@ -4,6 +4,7 @@
     {
         protected AsyncOperationGroup() { }
 
+        //TODO task数量?
         public long Total { get; protected set; }
 
         public long Processed { get; protected set; }

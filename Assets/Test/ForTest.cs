@@ -69,7 +69,7 @@ namespace E
             //cloneAsyncOperation = dataProcessor.Clone(
             //    @"http://localhost:4406/StreamingAssets/Data/files.data",
             //    @"file:///E:/Downloads/fuckme.data");
-            cloneAsyncOperation.sourceAccount = new CloneAsyncOperation.Account() { username = "admin", password = "123456" };
+
 
 
             //Task task = Task.Run(() => 

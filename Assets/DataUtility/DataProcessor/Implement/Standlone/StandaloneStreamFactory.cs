@@ -13,7 +13,7 @@ namespace E.Data
         {
             if (uri.IsFile)
             { return new FileStream(uri); }
-            else if((uri.Scheme == System.Uri.UriSchemeHttp) || (uri.Scheme == System.Uri.UriSchemeHttp))
+            else if((uri.Scheme == System.Uri.UriSchemeHttp) || (uri.Scheme == System.Uri.UriSchemeHttps))
             { return new HttpStream(uri, this); }
             else if(uri.Scheme == System.Uri.UriSchemeFtp)
             { return new FtpStream(uri, this); }
@@ -64,6 +64,7 @@ namespace E.Data
                 {
                     string name = GetFileName(localPath);
                     string dir = GetDirectoryName(localPath);
+                    if (!System.IO.Directory.Exists(dir)) { return false; }
                     string[] fileNames = System.IO.Directory.GetFiles
                         (dir, name + ".*.downloading", System.IO.SearchOption.TopDirectoryOnly);
                     if (fileNames.Length > 0) 
@@ -73,22 +74,15 @@ namespace E.Data
             }
 
             private void ResetFileTarget()
-            {
-                fileName = null;
-                fileInfo = null;
-            }
+            { fileName = null; fileInfo = null; }
 
             private static readonly Regex fileNameRegex = new Regex(@"(?:[/\\]{0,1}(?:[^/\\\:\?\*\<\>\|]+[/\\])+([^/\\\:\?\*\<\>\|]+(?:\.[^/\\\:\?\*\<\>\|]+){0,1}))");
 
             public static string GetDirectoryName(string filePath)
-            {
-                return filePath.Substring(0, filePath.Length - GetFileName(filePath).Length - 1);
-            }
+            { return filePath.Substring(0, filePath.Length - GetFileName(filePath).Length - 1); }
 
             public static string GetFileName(string filePath)
-            {
-                return fileNameRegex.Match(filePath).Groups[1].Value;
-            }
+            { return fileNameRegex.Match(filePath).Groups[1].Value; }
 
             public override bool Complete
             {
@@ -112,9 +106,7 @@ namespace E.Data
             { get { return FileName != null ? GetLength() : 0; } }
 
             private long GetLength() 
-            {
-                return ReadStream.Length;
-            }
+            { return ReadStream.Length; }
 
             private static readonly System.Text.RegularExpressions.Regex LastModifiedRegex
                 = new System.Text.RegularExpressions.Regex(@".+(?:\.([0-9]+)\.downloading)$");
@@ -215,10 +207,7 @@ namespace E.Data
             private void DisposeReadStream()
             {
                 if(readStream != null)
-                {
-                    readStream.Dispose();
-                    readStream = null;
-                }
+                { readStream.Dispose(); readStream = null; }
             }
 
             private System.IO.Stream readStream;
@@ -229,9 +218,7 @@ namespace E.Data
                 {
                     DisposeWriteStream();
                     if(readStream == null)
-                    {
-                        readStream = System.IO.File.OpenRead(FileName);
-                    }
+                    { readStream = System.IO.File.OpenRead(FileName); }
                     return readStream;
                 }
             }
@@ -239,10 +226,7 @@ namespace E.Data
             private void DisposeWriteStream()
             {
                 if(writeStream != null)
-                {
-                    writeStream.Dispose();
-                    writeStream = null;
-                }
+                { writeStream.Dispose(); writeStream = null; }
             }
 
             private System.IO.Stream writeStream;
@@ -253,9 +237,7 @@ namespace E.Data
                 {
                     DisposeReadStream();
                     if(writeStream == null)
-                    {
-                        writeStream = System.IO.File.OpenWrite(FileName);
-                    }
+                    { writeStream = System.IO.File.OpenWrite(FileName); }
                     return writeStream;
                 }
             }
@@ -1247,16 +1229,7 @@ namespace E.Data
                 }
                 catch (System.Net.WebException e)
                 {
-                    if (ftpWebResponse == null)
-                        ftpWebResponse = e.Response as System.Net.FtpWebResponse;
-                    switch (ftpWebResponse.StatusCode)
-                    {
-                        case System.Net.FtpStatusCode.ActionNotTakenFileUnavailable:
-                        case System.Net.FtpStatusCode.ActionNotTakenFileUnavailableOrBusy:
-                        case System.Net.FtpStatusCode.ActionNotTakenFilenameNotAllowed:
-                            return false;
-                        default: throw e;
-                    }
+                    throw e;
                 }
                 finally
                 {
@@ -1281,16 +1254,7 @@ namespace E.Data
                 }
                 catch (System.Net.WebException e)
                 {
-                    if (ftpWebResponse == null)
-                        ftpWebResponse = e.Response as System.Net.FtpWebResponse;
-                    switch (ftpWebResponse.StatusCode)
-                    {
-                        case System.Net.FtpStatusCode.ActionNotTakenFileUnavailable:
-                        case System.Net.FtpStatusCode.ActionNotTakenFileUnavailableOrBusy:
-                        case System.Net.FtpStatusCode.ActionNotTakenFilenameNotAllowed:
-                            return false;
-                        default: throw e;
-                    }
+                    throw e;
                 }
                 finally
                 {
@@ -1301,21 +1265,21 @@ namespace E.Data
 
             private long GetLength(string fileUri)
             {
-                if (fileUri == null) return -1;
+                long length = 0;
+                if (fileUri == null) return length;
                 System.Net.FtpWebRequest ftpWebRequest = null;
                 System.Net.FtpWebResponse ftpWebResponse = null;
-                long length = -1;
                 try
                 {
                     ftpWebRequest = GetRequest(fileUri, System.Net.WebRequestMethods.Ftp.GetFileSize);
-                    if (ftpWebRequest == null) return -1;
+                    if (ftpWebRequest == null) return length;
                     ftpWebResponse = GetResponse(ftpWebRequest);
-                    if (ftpWebResponse == null) return -1;
+                    if (ftpWebResponse == null) return length;
                     length = ftpWebResponse.ContentLength; 
                 }
                 catch
                 {
-                    return -1;
+                    return length;
                 }
                 finally
                 {
