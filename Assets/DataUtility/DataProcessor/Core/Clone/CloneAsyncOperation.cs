@@ -2,19 +2,7 @@
 {
     public class CloneAsyncOperation : AsyncOperation
     {
-        public struct Account
-        {
-            public string username;
-            public string password;
-        }
-
-        public Account sourceAccount;
-
-        public Account targetAccount;
-
         protected CloneAsyncOperation() { }
-
-        public int Timeout = 5 * 1000;
 
         /// <summary>
         /// TODO ?
@@ -38,7 +26,7 @@
             set
             {
                 if (!IsWorking) { loadData = value; }
-                else throw new System.MemberAccessException("can't access LoadAfterDownloaded while task is working.");
+                else throw new System.MemberAccessException("can't access LoadData while task is working.");
             }
         }
 

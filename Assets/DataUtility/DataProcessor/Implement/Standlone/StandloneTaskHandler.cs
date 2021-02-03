@@ -10,7 +10,7 @@ namespace E.Data
         {
             public override bool IsEnded()
             {
-                return task != null && (task.IsCompleted || task.IsCanceled || task.IsFaulted);
+                return asyncOperation.IsClosed || (task != null && (task.IsCompleted || task.IsCanceled || task.IsFaulted));
             }
 
             private Task task;

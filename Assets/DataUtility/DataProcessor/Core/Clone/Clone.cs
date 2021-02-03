@@ -2,12 +2,12 @@
 {
     public partial class DataProcessor
     {
-        public CloneAsyncOperation Clone(in System.IO.Stream stream, in string target)
+        public CloneAsyncOperation Clone(in System.IO.Stream data, in string target)
         {
             try
             {
                 System.Uri targetUri = new System.Uri(target);
-                return Clone(stream, targetUri);
+                return Clone(data, targetUri);
             }
             catch (System.Exception e)
             {
@@ -16,10 +16,60 @@
             }
         }
 
-        public CloneAsyncOperation Clone(in System.IO.Stream stream, in System.Uri target)
+        public CloneAsyncOperation Clone(System.IO.Stream data, in System.Uri target)
         {
-            //TODO stream -> target
-            return null;
+            if(Check(data, target, out DataStream targetStream, out CloneAsyncOperationImplement asyncOperation))
+            {
+                commandHandler.AddCommand(() => 
+                {
+                    void taskAction()
+                    {
+                        try
+                        {
+                            asyncOperation.IsWorking = true;
+                            targetStream.Timeout = asyncOperation.Timeout;
+                            targetStream.SetAccount(asyncOperation.targetAccount.username, asyncOperation.targetAccount.password);
+                            bool targetAllowed = targetStream.TestConnection();
+                            if (!targetAllowed) throw new System.IO.IOException("target connecting faild.");
+                            if (targetStream.Exists && !targetStream.Delete()) throw new System.IO.IOException("delete target faild.");
+                            targetStream.LastModified = System.DateTime.Now;
+                            if (!targetStream.Create()) throw new System.IO.IOException("craete target faild.");
+                            byte[] temp = new byte[CacheSize];
+                            long currentPosition = 0;
+                            long length = data.Length;
+                            data.Position = 0;
+                            asyncOperation.Size = length;
+                            asyncOperation.ProcessedBytes = currentPosition;
+                            while (currentPosition < length)
+                            {
+                                long remainCount = length - currentPosition;
+                                int readCount = remainCount > CacheSize ? CacheSize : (int)remainCount;
+                                readCount = data.Read(temp, 0, readCount);
+                                targetStream.Write(temp, 0, readCount);
+                                currentPosition += readCount;
+                                asyncOperation.ProcessedBytes = currentPosition;
+                            }
+                            if (currentPosition == length) { targetStream.Complete = true; return; }
+                        }
+                        catch (System.Exception e)
+                        {
+                            asyncOperation.IsError = true;
+                            DataProcessorDebug.LogError("cause an error while clone from byte[] to " + targetStream.uri
+                                + System.Environment.NewLine + e.Message + System.Environment.NewLine + e.StackTrace);
+                        }
+                    }
+                    void cleanTask()
+                    {
+                        targetStream.Dispose();
+                        targetStream = null;
+                        asyncOperation.Close();
+                        commandHandler.AddCommand(() =>
+                        { asyncOperation.onClose?.Invoke(); });
+                    }
+                    taskHandler.AddTask(asyncOperation, taskAction, cleanTask);
+                });
+            }
+            return asyncOperation;
         }
 
         public CloneAsyncOperation Clone(in byte[] data, in string target)
@@ -46,31 +96,30 @@
                     {
                         try
                         {
-                            if (targetStream != null)
+                            asyncOperation.IsWorking = true;
+                            targetStream.Timeout = asyncOperation.Timeout;
+                            targetStream.SetAccount(asyncOperation.targetAccount.username, asyncOperation.targetAccount.password);
+                            bool targetAllowed = targetStream.TestConnection();
+                            if (!targetAllowed) throw new System.IO.IOException("target connecting faild.");
+                            if (targetStream.Exists && !targetStream.Delete()) throw new System.IO.IOException("delete target faild.");
+                            targetStream.LastModified = System.DateTime.Now;
+                            if (!targetStream.Create()) throw new System.IO.IOException("craete target faild.");
+                            byte[] temp = new byte[CacheSize];
+                            long currentPosition = 0;
+                            long length = data.LongLength;
+                            asyncOperation.Size = length;
+                            asyncOperation.ProcessedBytes = currentPosition;
+                            while (currentPosition < length)
                             {
-                                asyncOperation.IsWorking = true;
-                                targetStream.Timeout = asyncOperation.Timeout;
-                                targetStream.SetAccount(asyncOperation.targetAccount.username, asyncOperation.targetAccount.password);
-                                bool targetAllowed = targetStream.TestConnection();
-                                if (!targetAllowed) throw new System.IO.IOException("target connecting faild.");
-                                if (targetStream.Exists && !targetStream.Delete()) throw new System.IO.IOException("delete target faild.");
-                                if (!targetStream.Create()) throw new System.IO.IOException("craete target faild.");
-                                byte[] temp = new byte[CacheSize];
-                                long currentPosition = 0;
-                                long length = data.LongLength;
-                                asyncOperation.Size = length;
-                                while (currentPosition < length)
-                                {
-                                    long remainCount = length - currentPosition;
-                                    int readCount = remainCount > CacheSize ? CacheSize : (int)remainCount;
-                                    for (int i = 0; i < readCount; i++)
-                                    { temp[i] = data[currentPosition + i]; }
-                                    targetStream.Write(temp, 0, readCount);
-                                    currentPosition += readCount;
-                                    asyncOperation.ProcessedBytes = currentPosition;
-                                }
+                                long remainCount = length - currentPosition;
+                                int readCount = remainCount > CacheSize ? CacheSize : (int)remainCount;
+                                for (int i = 0; i < readCount; i++)
+                                { temp[i] = data[currentPosition + i]; }
+                                targetStream.Write(temp, 0, readCount);
+                                currentPosition += readCount;
+                                asyncOperation.ProcessedBytes = currentPosition;
                             }
-                            else throw new System.IO.IOException("target is null");
+                            if (currentPosition == length) { targetStream.Complete = true; return; }
                         }
                         catch (System.Exception e)
                         {
@@ -81,14 +130,13 @@
                     }
                     void cleanTask()
                     {
-                        targetStream?.Dispose();
+                        targetStream.Dispose();
+                        targetStream = null;
                         asyncOperation.Close();
                         commandHandler.AddCommand(() =>
-                        {
-                            asyncOperation.onClose?.Invoke();
-                        });
+                        { asyncOperation.onClose?.Invoke(); });
                     }
-                    taskHandler.AddTask(taskAction, cleanTask);
+                    taskHandler.AddTask(asyncOperation, taskAction, cleanTask);
                 });
             }
             return asyncOperation;
@@ -166,7 +214,6 @@
                             string sourceVersion = sourceExists ? sourceStream.Version : null;
                             string targetVersion = targetExists ? targetStream.Version : null;
                             bool versionChanged = sourceExists && ((sourceVersion == null) || (sourceVersion != targetVersion));
-                            DataProcessorDebug.LogError("enter here " + sourceExists + " " + targetExists + " " + sourceVersion + " " + targetVersion);
                             if (targetExists && versionChanged)
                             { 
                                 if (!targetStream.Delete()) return; 
@@ -247,11 +294,9 @@
                         targetStream = null;
                         asyncOperation.Close();
                         commandHandler.AddCommand(() =>
-                        {
-                            asyncOperation.onClose?.Invoke();
-                        });
+                        { asyncOperation.onClose?.Invoke(); });
                     }
-                    taskHandler.AddTask(taskAction, cleanTask);
+                    taskHandler.AddTask(asyncOperation, taskAction, cleanTask);
                 });
             return asyncOperation;
         }

@@ -2,6 +2,27 @@
 {
     public partial class DataProcessor
     {
+        private bool Check(in System.IO.Stream data, in System.Uri target, out DataStream targetStream, out CloneAsyncOperationImplement asyncOperation)
+        {
+            targetStream = null;
+            asyncOperation = null;
+            try
+            {
+                if (data == null)
+                    throw new System.ArgumentNullException("data");
+                if (!(target != null && target.IsAbsoluteUri))
+                    throw new System.ArgumentException("must be absolute uri", "target");
+                targetStream = streamFactory.GetStream(target);
+                asyncOperation = new CloneAsyncOperationImplement();
+                return true;
+            }
+            catch (System.Exception e)
+            {
+                DataProcessorDebug.LogException(e);
+                return false;
+            }
+        }
+
         private bool Check(in byte[] data, in System.Uri target, out DataStream targetStream, out CloneAsyncOperationImplement asyncOperation)
         {
             targetStream = null;
@@ -14,13 +35,13 @@
                     throw new System.ArgumentException("must be absolute uri", "target");
                 targetStream = streamFactory.GetStream(target);
                 asyncOperation = new CloneAsyncOperationImplement();
+                return true;
             }
             catch (System.Exception e)
             {
                 DataProcessorDebug.LogException(e);
                 return false;
             }
-            return true;
         }
 
         private bool Check(in System.Uri source, in System.Uri target,
@@ -40,13 +61,13 @@
                     targetStream = streamFactory.GetStream(target);
                 }
                 asyncOperation = new CloneAsyncOperationImplement();
+                return true;
             }
             catch (System.Exception e)
             {
                 DataProcessorDebug.LogException(e);
                 return false;
             }
-            return true;
         }
 
         private class CloneAsyncOperationImplement : CloneAsyncOperation

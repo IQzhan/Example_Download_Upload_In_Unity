@@ -4,6 +4,18 @@
     {
         protected AsyncOperation() { }
 
+        public struct Account
+        {
+            public string username;
+            public string password;
+        }
+
+        public Account sourceAccount;
+
+        public Account targetAccount;
+
+        public int Timeout = 5 * 1000;
+
         /// <summary>
         /// callback on closed
         /// </summary>

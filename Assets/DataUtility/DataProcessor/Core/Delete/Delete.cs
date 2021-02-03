@@ -12,8 +12,8 @@
             catch (System.Exception e)
             {
                 DataProcessorDebug.LogException(e);
+                return null;
             }
-            return null;
         }
 
         public DeleteAsyncOperation Delete(in System.Uri target)
@@ -27,7 +27,9 @@
                         try
                         {
                             asyncOperation.IsWorking = true;
-                            if (targetStream != null && targetStream.Exists && targetStream.Delete())
+                            targetStream.Timeout = asyncOperation.Timeout;
+                            targetStream.SetAccount(asyncOperation.targetAccount.username, asyncOperation.targetAccount.password);
+                            if (targetStream.Exists && targetStream.Delete())
                             { asyncOperation.Progress = 1; }
                         }
                         catch (System.Exception e)
@@ -43,11 +45,9 @@
                         targetStream = null;
                         asyncOperation?.Close();
                         commandHandler.AddCommand(() =>
-                        {
-                            asyncOperation.onClose?.Invoke();
-                        });
+                        { asyncOperation.onClose?.Invoke(); });
                     }
-                    taskHandler.AddTask(taskAction, cleanTask);
+                    taskHandler.AddTask(asyncOperation, taskAction, cleanTask);
                 });
             }
             return asyncOperation;

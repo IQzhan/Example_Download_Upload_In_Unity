@@ -65,11 +65,11 @@ namespace E
 
         private void TestDownload()
         {
-            dataProcessor.CacheSize = 1024;
-            cloneAsyncOperation = dataProcessor.Clone(
-                @"http://localhost:4406/StreamingAssets/Data/files.data",
-                @"file:///E:/Downloads/fuckme.data");
-            
+            //dataProcessor.CacheSize = 1024;
+            //cloneAsyncOperation = dataProcessor.Clone(
+            //    @"http://localhost:4406/StreamingAssets/Data/files.data",
+            //    @"file:///E:/Downloads/fuckme.data");
+            cloneAsyncOperation.sourceAccount = new CloneAsyncOperation.Account() { username = "admin", password = "123456" };
 
 
             //Task task = Task.Run(() => 
@@ -128,6 +128,18 @@ namespace E
             //        factory?.Dispose();
             //    }
             //});
+
+            //
+
+        }
+
+        private struct Fuck
+        {
+            public int num;
+            public void AddNum()
+            {
+                ++num;
+            }
 
         }
 
