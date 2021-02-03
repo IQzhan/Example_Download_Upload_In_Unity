@@ -70,7 +70,15 @@ namespace E
             //    @"http://localhost:4406/StreamingAssets/Data/files.data",
             //    @"file:///E:/Downloads/fuckme.data");
 
+            cloneAsyncOperation = dataProcessor.Clone(
+                @"file:///E:/Downloads/Postman-win64-8.0.2-Setup.exe",
+                @"file:///D:/Postman-win64-8.0.2-Setup.exe");
 
+            bool exi = System.IO.Directory.Exists("D:/");
+            Debug.LogError(exi);
+            string[] fileNames = System.IO.Directory.GetFiles
+                        (@"D:/", "*.*.downloading", System.IO.SearchOption.TopDirectoryOnly);
+            Debug.LogError(fileNames.Length);
 
             //Task task = Task.Run(() => 
             //{
@@ -133,20 +141,6 @@ namespace E
 
         }
 
-        private struct Fuck
-        {
-            public int num;
-            public void AddNum()
-            {
-                ++num;
-            }
-
-        }
-
-        private IEnumerable<string> Invoker()
-        {
-            yield return null;
-        }
 
         private static readonly Regex fileNameRegex = new Regex(@"(?:[/\\]{0,1}(?:[^/\\\:\?\*\<\>\|]+[/\\])+([^/\\\:\?\*\<\>\|]+(?:\.[^/\\\:\?\*\<\>\|]+){0,1}))");
 

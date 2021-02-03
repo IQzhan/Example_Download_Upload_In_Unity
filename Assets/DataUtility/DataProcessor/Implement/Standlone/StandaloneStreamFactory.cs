@@ -32,6 +32,15 @@ namespace E.Data
         {
         }
 
+        //TODO 
+        private static readonly Regex fileNameRegex = new Regex(@"(?:[/\\]{0,1}(?:[^/\\\:\?\*\<\>\|]+[/\\])+([^/\\\:\?\*\<\>\|]+(?:\.[^/\\\:\?\*\<\>\|]+){0,1}))");
+
+        public static string GetDirectoryName(string filePath)
+        { return filePath.Substring(0, filePath.Length - GetFileName(filePath).Length - 1); }
+
+        public static string GetFileName(string filePath)
+        { return fileNameRegex.Match(filePath).Groups[1].Value; }
+
         private class FileStream : DataStream
         {
             public FileStream(in System.Uri uri) : base(uri) { }
@@ -63,8 +72,9 @@ namespace E.Data
                 else
                 {
                     string name = GetFileName(localPath);
+                    DataProcessorDebug.LogError(name);
                     string dir = GetDirectoryName(localPath);
-                    if (!System.IO.Directory.Exists(dir)) { return false; }
+                    if (!System.IO.Directory.Exists(dir)) return false;
                     string[] fileNames = System.IO.Directory.GetFiles
                         (dir, name + ".*.downloading", System.IO.SearchOption.TopDirectoryOnly);
                     if (fileNames.Length > 0) 
@@ -75,14 +85,6 @@ namespace E.Data
 
             private void ResetFileTarget()
             { fileName = null; fileInfo = null; }
-
-            private static readonly Regex fileNameRegex = new Regex(@"(?:[/\\]{0,1}(?:[^/\\\:\?\*\<\>\|]+[/\\])+([^/\\\:\?\*\<\>\|]+(?:\.[^/\\\:\?\*\<\>\|]+){0,1}))");
-
-            public static string GetDirectoryName(string filePath)
-            { return filePath.Substring(0, filePath.Length - GetFileName(filePath).Length - 1); }
-
-            public static string GetFileName(string filePath)
-            { return fileNameRegex.Match(filePath).Groups[1].Value; }
 
             public override bool Complete
             {
@@ -218,7 +220,10 @@ namespace E.Data
                 {
                     DisposeWriteStream();
                     if(readStream == null)
-                    { readStream = System.IO.File.OpenRead(FileName); }
+                    { 
+                        readStream = System.IO.File.Open(FileName, System.IO.FileMode.Open, System.IO.FileAccess.Read);
+                        readStream.Position = position;
+                    }
                     return readStream;
                 }
             }
@@ -237,7 +242,11 @@ namespace E.Data
                 {
                     DisposeReadStream();
                     if(writeStream == null)
-                    { writeStream = System.IO.File.OpenWrite(FileName); }
+                    {
+                        DataProcessorDebug.LogError("filename " + FileName);
+                        writeStream = System.IO.File.Open(FileName, System.IO.FileMode.OpenOrCreate, System.IO.FileAccess.Write);
+                        writeStream.Position = position;
+                    }
                     return writeStream;
                 }
             }
@@ -355,14 +364,6 @@ namespace E.Data
                     testResponse?.Dispose();
                 }
             }
-
-            private static readonly Regex fileNameRegex = new Regex(@"(?:[/\\]{0,1}(?:[^/\\\:\?\*\<\>\|]+[/\\])+([^/\\\:\?\*\<\>\|]+(?:\.[^/\\\:\?\*\<\>\|]+){0,1}))");
-
-            public static string GetDirectoryName(string filePath)
-            { return filePath.Substring(0, filePath.Length - GetFileName(filePath).Length - 1); }
-
-            public static string GetFileName(string filePath)
-            { return fileNameRegex.Match(filePath).Groups[1].Value; }
 
             private bool Refresh()
             {
@@ -787,14 +788,6 @@ namespace E.Data
             private const string extend = ".downloading";
 
             private const string slash = "/";
-
-            private static readonly Regex fileNameRegex = new Regex(@"(?:[/\\]{0,1}(?:[^/\\\:\?\*\<\>\|]+[/\\])+([^/\\\:\?\*\<\>\|]+(?:\.[^/\\\:\?\*\<\>\|]+){0,1}))");
-
-            public static string GetDirectoryName(string filePath)
-            { return filePath.Substring(0, filePath.Length - GetFileName(filePath).Length - 1); }
-
-            public static string GetFileName(string filePath)
-            { return fileNameRegex.Match(filePath).Groups[1].Value; }
 
             private string fileName;
 

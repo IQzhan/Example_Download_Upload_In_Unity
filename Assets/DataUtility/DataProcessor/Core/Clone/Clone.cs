@@ -216,13 +216,13 @@
                             bool versionChanged = sourceExists && ((sourceVersion == null) || (sourceVersion != targetVersion));
                             if (targetExists && versionChanged)
                             { 
-                                if (!targetStream.Delete()) return; 
+                                if (!targetStream.Delete()) throw new System.IO.IOException("delete faild."); 
                                 targetExists = false; 
                             }
                             if (targetAllowed && sourceExists && targetStream != null && !targetExists)
                             {
                                 targetStream.LastModified = sourceStream.LastModified;
-                                if (!targetStream.Create()) return;
+                                if (!targetStream.Create()) throw new System.IO.IOException("create faild.");
                                 targetExists = true;
                             }
                             bool complete = targetExists && targetStream.Complete;
