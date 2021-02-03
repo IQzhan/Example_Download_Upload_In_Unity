@@ -17,8 +17,10 @@
         }
 
         private class AsyncOperationGroupImplement : AsyncOperationGroup 
-        { 
-            //TODO
+        {
+            public new long Total { get { return base.Total; } set { base.Total = value; } }
+
+            public new long Processed { get { return base.Processed; } set { base.Processed = value; } }
         }
     }
 }
