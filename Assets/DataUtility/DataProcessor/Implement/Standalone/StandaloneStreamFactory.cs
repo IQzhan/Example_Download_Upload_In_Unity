@@ -32,6 +32,9 @@ namespace E.Data
         {
         }
 
+        private static readonly System.Text.RegularExpressions.Regex LastModifiedRegex
+            = new System.Text.RegularExpressions.Regex(@".+(?:\.([0-9]+)\.downloading)$");
+
         private static readonly Regex fileNameRegex = new Regex(@"(?:[/\\]+([^/\\]+)[/\\]*)$");
 
         public static string GetDirectoryName(string filePath)
@@ -107,9 +110,6 @@ namespace E.Data
 
             private long GetLength() 
             { return ReadStream.Length; }
-
-            private static readonly System.Text.RegularExpressions.Regex LastModifiedRegex
-                = new System.Text.RegularExpressions.Regex(@".+(?:\.([0-9]+)\.downloading)$");
 
             private System.DateTime lastModified = System.DateTime.MinValue;
 
@@ -191,9 +191,8 @@ namespace E.Data
                 }
                 set
                 {
-                    position = value;
                     System.IO.Stream stream = GetStream();
-                    if (stream != null) stream.Position = position;
+                    if (stream != null) stream.Position = position = value;
                 }
             }
 
@@ -249,19 +248,13 @@ namespace E.Data
             }
 
             public override int Read(byte[] buffer, int offset, int count)
-            {
-                return ReadStream.Read(buffer, offset, count);
-            }
+            { return ReadStream.Read(buffer, offset, count); }
 
             public override void Write(byte[] buffer, int offset, int count)
-            {
-                WriteStream.Write(buffer, offset, count);
-            }
+            { WriteStream.Write(buffer, offset, count); }
 
             protected override void ReleaseManaged()
-            {
-                ResetFileTarget();
-            }
+            { ResetFileTarget(); }
 
             protected override void ReleaseUnmanaged()
             {
@@ -824,17 +817,14 @@ namespace E.Data
 
             public override bool Complete
             {
-                get
-                {
-                    string fn = FileName;
-                    return fn != null && !fn.EndsWith(extend);
-                }
+                get { string fn = FileName; return fn != null && !fn.EndsWith(extend); }
                 set
                 {
                     string fn = FileName;
                     if (value && fn != null && fn.EndsWith(extend))
                     {
-                        if(!Rename(fn, GetFileName(uri.OriginalString))) { }
+                        if(!Rename(fn, GetFileName(uri.OriginalString))) 
+                        { throw new System.IO.IOException("rename faild."); }
                         ResetFileTarget();
                     }
                 }
@@ -846,9 +836,6 @@ namespace E.Data
             { get { if (length == -1) { length = GetLength(FileName); } return length; } }
 
             private System.DateTime lastModified = System.DateTime.MinValue;
-
-            private static readonly System.Text.RegularExpressions.Regex LastModifiedRegex
-                = new System.Text.RegularExpressions.Regex(@".+(?:\.([0-9]+)\.downloading)$");
 
             public override System.DateTime LastModified
             {
@@ -878,7 +865,8 @@ namespace E.Data
                     if (fn != null)
                     {
                         if (fn.EndsWith(extend))
-                        { Rename(fn, GetFileName(uri.OriginalString) + "." + value.Ticks.ToString() + extend); }
+                        { if(!Rename(fn, GetFileName(uri.OriginalString) + "." + value.Ticks.ToString() + extend))
+                            { throw new System.IO.IOException("rename faild."); } }
                     }
                     lastModified = value;
                 }
@@ -911,14 +899,10 @@ namespace E.Data
             }
 
             public override int Read(byte[] buffer, int offset, int count)
-            {
-                return ResponseStream.Read(buffer, offset, count);
-            }
+            { return ResponseStream.Read(buffer, offset, count); }
 
             public override void Write(byte[] buffer, int offset, int count)
-            {
-                RequestStream.Write(buffer, offset, count);
-            }
+            { RequestStream.Write(buffer, offset, count); }
 
             protected override void ReleaseManaged()
             {
@@ -1059,7 +1043,7 @@ namespace E.Data
                         case System.Net.FtpStatusCode.ActionNotTakenFileUnavailable:
                         case System.Net.FtpStatusCode.ActionNotTakenFileUnavailableOrBusy:
                             return null;
-                        default: throw e;
+                        default: throw new System.IO.IOException("get files faild." + Environment.NewLine + e.Message + Environment.NewLine + e.StackTrace);
                     }
                 }
                 finally
@@ -1069,43 +1053,6 @@ namespace E.Data
                     ftpWebRequest?.Abort();
                 }
             }
-
-            private bool CreateFile(string fileUri)
-            {
-                if (fileUri == null) return false;
-                string dirname = GetDirectoryName(fileUri);
-                if (!CreateDir(dirname)) { return false; }
-                System.Net.FtpWebRequest ftpWebRequest = null;
-                System.Net.FtpWebResponse ftpWebResponse = null;
-                try
-                {
-                    ftpWebRequest = GetRequest(fileUri, System.Net.WebRequestMethods.Ftp.AppendFile);
-                    if (ftpWebRequest == null) return false;
-                    ftpWebResponse = GetResponse(ftpWebRequest);
-                    if (ftpWebResponse == null) return false;
-                    return true;
-                }
-                catch (System.Net.WebException e)
-                {
-                    if (ftpWebResponse == null)
-                        ftpWebResponse = e.Response as System.Net.FtpWebResponse;
-                    switch (ftpWebResponse.StatusCode)
-                    {
-                        case System.Net.FtpStatusCode.ActionNotTakenFileUnavailable:
-                        case System.Net.FtpStatusCode.ActionNotTakenFileUnavailableOrBusy:
-                        case System.Net.FtpStatusCode.ActionNotTakenFilenameNotAllowed:
-                            return false;
-                        default: throw e;
-                    }
-                }
-                finally
-                {
-                    ftpWebResponse?.Dispose();
-                    ftpWebRequest?.Abort();
-                }
-            }
-
-            private static readonly Regex hostRegex = new Regex(@"^(?:ftp://[^/\\]+)$");
 
             //TODO
             private bool FileExists(string fileUri)
@@ -1139,6 +1086,42 @@ namespace E.Data
                     ftpWebRequest?.Abort();
                 }
             }
+
+            private bool CreateFile(string fileUri)
+            {
+                if (fileUri == null) return false;
+                string dirname = GetDirectoryName(fileUri);
+                if (!CreateDir(dirname)) { return false; }
+                System.Net.FtpWebRequest ftpWebRequest = null;
+                System.Net.FtpWebResponse ftpWebResponse = null;
+                try
+                {
+                    ftpWebRequest = GetRequest(fileUri, System.Net.WebRequestMethods.Ftp.AppendFile);
+                    if (ftpWebRequest == null) return false;
+                    ftpWebResponse = GetResponse(ftpWebRequest);
+                    if (ftpWebResponse == null) return false;
+                    return true;
+                }
+                catch (System.Net.WebException e)
+                {
+                    if (ftpWebResponse == null)
+                        ftpWebResponse = e.Response as System.Net.FtpWebResponse;
+                    switch (ftpWebResponse.StatusCode)
+                    {
+                        case System.Net.FtpStatusCode.ActionNotTakenFileUnavailable:
+                        case System.Net.FtpStatusCode.ActionNotTakenFileUnavailableOrBusy:
+                            return false;
+                        default: throw new System.IO.IOException("create file faild." + Environment.NewLine + e.Message + Environment.NewLine + e.StackTrace);
+                    }
+                }
+                finally
+                {
+                    ftpWebResponse?.Dispose();
+                    ftpWebRequest?.Abort();
+                }
+            }
+
+            private static readonly Regex hostRegex = new Regex(@"^(?:ftp://[^/\\]+)$");
 
             private bool CreateDir(string dirUri)
             {
@@ -1181,9 +1164,8 @@ namespace E.Data
                     {
                         case System.Net.FtpStatusCode.ActionNotTakenFileUnavailable:
                         case System.Net.FtpStatusCode.ActionNotTakenFileUnavailableOrBusy:
-                        case System.Net.FtpStatusCode.ActionNotTakenFilenameNotAllowed:
                             return false;
-                        default: throw e;
+                        default: throw new System.IO.IOException("find dirctory faild." + Environment.NewLine + e.Message + Environment.NewLine + e.StackTrace);
                     }
                 }
                 finally
@@ -1215,9 +1197,8 @@ namespace E.Data
                     {
                         case System.Net.FtpStatusCode.ActionNotTakenFileUnavailable:
                         case System.Net.FtpStatusCode.ActionNotTakenFileUnavailableOrBusy:
-                        case System.Net.FtpStatusCode.ActionNotTakenFilenameNotAllowed:
                             return false;
-                        default: throw e;
+                        default: throw new System.IO.IOException("create dirctory faild." + Environment.NewLine + e.Message + Environment.NewLine + e.StackTrace);
                     }
                 }
                 finally
@@ -1240,10 +1221,8 @@ namespace E.Data
                     if (ftpWebResponse == null) return false;
                     return true;
                 }
-                catch (System.Net.WebException e)
-                {
-                    throw e;
-                }
+                catch (System.Exception e)
+                { throw new System.IO.IOException("delete faild." + Environment.NewLine + e.Message + Environment.NewLine + e.StackTrace); }
                 finally
                 {
                     ftpWebResponse?.Dispose();
@@ -1265,10 +1244,8 @@ namespace E.Data
                     if (ftpWebResponse == null) return false;
                     return true;
                 }
-                catch (System.Net.WebException e)
-                {
-                    throw e;
-                }
+                catch (System.Exception e)
+                { throw new System.IO.IOException("rename faild." + Environment.NewLine + e.Message + Environment.NewLine + e.StackTrace); }
                 finally
                 {
                     ftpWebResponse?.Dispose();
@@ -1290,10 +1267,8 @@ namespace E.Data
                     if (ftpWebResponse == null) return length;
                     length = ftpWebResponse.ContentLength; 
                 }
-                catch
-                {
-                    return length;
-                }
+                catch (System.Exception e) 
+                { throw new System.IO.IOException("get length faild." + Environment.NewLine + e.Message + Environment.NewLine + e.StackTrace); }
                 finally
                 {
                     ftpWebResponse?.Dispose();
@@ -1310,16 +1285,14 @@ namespace E.Data
                 try
                 {
                     ftpWebRequest = GetRequest(fileUri, System.Net.WebRequestMethods.Ftp.GetDateTimestamp);
-                    if(ftpWebRequest == null) return System.DateTime.MinValue;
+                    if (ftpWebRequest == null) return System.DateTime.MinValue;
                     ftpWebResponse = GetResponse(ftpWebRequest);
-                    if(ftpWebResponse == null) return System.DateTime.MinValue;
+                    if (ftpWebResponse == null) return System.DateTime.MinValue;
                     System.DateTime lastModified = ftpWebResponse.LastModified;
                     return lastModified;
                 }
-                catch
-                {
-                    return System.DateTime.MinValue;
-                }
+                catch (System.Exception e)
+                { throw new System.IO.IOException("get last modified faild." + Environment.NewLine + e.Message + Environment.NewLine + e.StackTrace); }
                 finally
                 {
                     ftpWebResponse?.Dispose();

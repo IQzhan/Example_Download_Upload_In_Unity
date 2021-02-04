@@ -65,7 +65,6 @@ namespace E
 
         private void TestDownload()
         {
-            //dataProcessor.CacheSize = 1024;
             //cloneAsyncOperation = dataProcessor.Clone(
             //    @"http://localhost:4406/StreamingAssets/Data/files.data",
             //    @"file:///E:/Downloads/fuckme.data");
@@ -74,83 +73,14 @@ namespace E
             //    @"file:///E:/Downloads/Postman-win64-8.0.2-Setup.exe",
             //    @"file:///D:/Postman-win64-8.0.2-Setup.exe");
 
-            System.UriBuilder ub = new System.UriBuilder();
-            ub.Scheme = "file";
-            ub.Path = @"D:/Postman-win64-8.0.2-Setup.exe";
-            //ub.Host = "localhost";
-            //ub.UserName = "fuck";
-            //ub.Password = "123456";
-            Debug.LogError(ub.Uri);
-
-            dataProcessor.Delete(@"file:///D:/Postman-win64-8.0.2-Setup.exe");
-            AsyncOperationGroup asyncOperationGroup = dataProcessor.StartAsyncOperationGroup();
+            byte[] data = System.Text.Encoding.UTF8.GetBytes("草泥马傻逼吧？");
+            CloneAsyncOperation cloneAsyncOperation1 = dataProcessor.Clone(data, "file:///D:/eatshit.txt");
             
             //bool exi = System.IO.Directory.Exists("D:/");
             //Debug.LogError(exi);
             //string[] fileNames = System.IO.Directory.GetFiles
             //            (@"D:/", "*.*.downloading", System.IO.SearchOption.TopDirectoryOnly);
             //Debug.LogError(fileNames.Length);
-
-            //Task task = Task.Run(() => 
-            //{
-            //    StandaloneStreamFactory factory = null;
-            //    DataStream dataStream = null;
-            //    try
-            //    {
-            //        //System.Uri uri0 = new System.Uri(@"ftp://localhost/suckmydick/吃鸡吧.txt");
-            //        //System.Uri uri1 = new System.Uri(@"ftp://localhost/吃鸡吧1.txt");
-            //        //System.Uri uri2 = new System.Uri(@"file:///E:/Downloads/fuckyou.txt");
-            //        //System.Uri uri3 = new System.Uri(@"http://localhost:4406/StreamingAssets/Data/files.data");
-            //        //factory = new StandaloneStreamFactoryInstance();
-            //        //dataStream = factory.GetStream(uri3);
-            //        //dataStream.Timeout = 5 * 1000;
-            //        //bool exists = dataStream.Exists;
-            //        //Debug.LogError(exists);
-            //        //long length = dataStream.Length;
-            //        //Debug.LogError(length);
-
-            //        //byte[] data = new byte[length];
-            //        //dataStream.Read(data, 0, data.Length);
-            //        //string str = System.Text.ASCIIEncoding.UTF8.GetString(data);
-            //        //Debug.LogError(str);
-            //        //if (exists)
-            //        //{
-            //        //    bool deleted = dataStream.Delete();
-            //        //    Debug.LogError(deleted);
-            //        //}
-            //        //dataStream.LastModified = System.DateTime.Now;
-            //        //bool created = dataStream.Create();
-            //        //Debug.LogError(created);
-            //        //dataStream.Complete = true;
-
-
-            //        //string text0 = "我日你妈嗨";
-            //        //byte[] data0 = System.Text.ASCIIEncoding.UTF8.GetBytes(text0);
-            //        //dataStream.Write(data0, 0, data0.Length);
-            //        //dataStream.Complete = true;
-
-            //        //long 长度 = dataStream.Length;
-            //        //Debug.LogError(长度);
-            //        //byte[] data = new byte[长度];
-            //        //dataStream.Read(data, 0, (int)长度);
-            //        //string text = System.Text.ASCIIEncoding.UTF8.GetString(data);
-            //        //Debug.LogError(text);
-
-            //    }
-            //    catch (System.Exception e)
-            //    {
-            //        Debug.LogException(e);
-            //    }
-            //    finally
-            //    {
-            //        dataStream?.Dispose();
-            //        factory?.Dispose();
-            //    }
-            //});
-
-            //
-            //bool ffe = FileExists(@"ftp://localhost/jiba/Postman-win64-8.0.2-Setup.exe");
-            //DataProcessorDebug.LogError(ffe.ToString());
 
         }
 
