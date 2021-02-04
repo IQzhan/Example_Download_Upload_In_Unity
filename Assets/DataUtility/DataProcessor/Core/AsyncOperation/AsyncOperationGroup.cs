@@ -4,11 +4,12 @@
     {
         protected AsyncOperationGroup() { }
 
-        //TODO task数量?
-        public long Total { get; protected set; }
+        public int TotalTasks { get; protected set; }
 
-        public long Processed { get; protected set; }
+        public int SuccessfulTasks { get; protected set; }
 
-        public override double Progress => (double)Processed / Total;
+        public int CompletedTasks { get; protected set; }
+
+        public override double Progress => (double)SuccessfulTasks / TotalTasks;
     }
 }

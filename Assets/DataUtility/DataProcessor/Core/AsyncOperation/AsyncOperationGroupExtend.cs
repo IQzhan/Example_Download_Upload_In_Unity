@@ -18,9 +18,11 @@
 
         private class AsyncOperationGroupImplement : AsyncOperationGroup 
         {
-            public new long Total { get { return base.Total; } set { base.Total = value; } }
+            public new int TotalTasks { get { return base.TotalTasks; } set { base.TotalTasks = value; } }
 
-            public new long Processed { get { return base.Processed; } set { base.Processed = value; } }
+            public new int SuccessfulTasks { get { return base.SuccessfulTasks; } set { base.SuccessfulTasks = value; } }
+
+            public new int CompletedTasks { get { return base.CompletedTasks; } set { base.CompletedTasks = value; } }
         }
     }
 }

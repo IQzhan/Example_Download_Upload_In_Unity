@@ -1,6 +1,6 @@
 ﻿namespace E.Data
 {
-    public class DeleteAsyncOperation : AsyncOperation
+    public class DeleteAsyncOperation : ConnectionAsyncOperation
     {
         protected DeleteAsyncOperation() { }
 

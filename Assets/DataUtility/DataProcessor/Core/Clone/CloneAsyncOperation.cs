@@ -1,6 +1,6 @@
 ﻿namespace E.Data
 {
-    public class CloneAsyncOperation : AsyncOperation
+    public class CloneAsyncOperation : ConnectionAsyncOperation
     {
         protected CloneAsyncOperation() { }
 

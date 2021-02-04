@@ -32,11 +32,10 @@ namespace E.Data
         {
         }
 
-        //TODO 
-        private static readonly Regex fileNameRegex = new Regex(@"(?:[/\\]{0,1}(?:[^/\\\:\?\*\<\>\|]+[/\\])+([^/\\\:\?\*\<\>\|]+(?:\.[^/\\\:\?\*\<\>\|]+){0,1}))");
+        private static readonly Regex fileNameRegex = new Regex(@"(?:[/\\]+([^/\\]+)[/\\]*)$");
 
         public static string GetDirectoryName(string filePath)
-        { return filePath.Substring(0, filePath.Length - GetFileName(filePath).Length - 1); }
+        { return fileNameRegex.Replace(filePath, string.Empty); }
 
         public static string GetFileName(string filePath)
         { return fileNameRegex.Match(filePath).Groups[1].Value; }
@@ -72,12 +71,11 @@ namespace E.Data
                 else
                 {
                     string name = GetFileName(localPath);
-                    DataProcessorDebug.LogError(name);
                     string dir = GetDirectoryName(localPath);
                     if (!System.IO.Directory.Exists(dir)) return false;
                     string[] fileNames = System.IO.Directory.GetFiles
                         (dir, name + ".*.downloading", System.IO.SearchOption.TopDirectoryOnly);
-                    if (fileNames.Length > 0) 
+                    if (fileNames.Length > 0)
                     { fileName = fileNames[0]; fileInfo = null; fileInfo = new System.IO.FileInfo(fileName); }
                 }
                 return fileName != null;
@@ -243,7 +241,6 @@ namespace E.Data
                     DisposeReadStream();
                     if(writeStream == null)
                     {
-                        DataProcessorDebug.LogError("filename " + FileName);
                         writeStream = System.IO.File.Open(FileName, System.IO.FileMode.OpenOrCreate, System.IO.FileAccess.Write);
                         writeStream.Position = position;
                     }
@@ -1110,14 +1107,37 @@ namespace E.Data
 
             private static readonly Regex hostRegex = new Regex(@"^(?:ftp://[^/\\]+)$");
 
+            //TODO
             private bool FileExists(string fileUri)
             {
-                if (fileUri == null) return false;
-                if (hostRegex.IsMatch(fileUri)) return TestConnection();
-                string baseName = GetDirectoryName(fileUri);
-                if (!FileExists(baseName)) return false;
-                //TODO ?
-                return true;
+                if (fileUri == null) throw new System.ArgumentNullException("fileUri");
+                System.Net.FtpWebRequest ftpWebRequest = null;
+                System.Net.FtpWebResponse ftpWebResponse = null;
+                try
+                {
+                    ftpWebRequest = GetRequest(fileUri, System.Net.WebRequestMethods.Ftp.GetDateTimestamp);
+                    ftpWebResponse = GetResponse(ftpWebRequest);
+                    return true;
+                }
+                catch (System.Net.WebException e)
+                {
+                    if (ftpWebResponse == null)
+                        ftpWebResponse = e.Response as System.Net.FtpWebResponse;
+                    switch (ftpWebResponse.StatusCode)
+                    {
+                        case System.Net.FtpStatusCode.ActionNotTakenFileUnavailable:
+                        case System.Net.FtpStatusCode.ActionNotTakenFilenameNotAllowed:
+                            return false;
+                        case System.Net.FtpStatusCode.ActionNotTakenFileUnavailableOrBusy:
+                            return true;
+                        default: throw e;
+                    }
+                }
+                finally
+                {
+                    ftpWebResponse?.Dispose();
+                    ftpWebRequest?.Abort();
+                }
             }
 
             private bool CreateDir(string dirUri)

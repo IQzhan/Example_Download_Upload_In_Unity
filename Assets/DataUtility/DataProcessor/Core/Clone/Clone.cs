@@ -54,7 +54,7 @@
                         catch (System.Exception e)
                         {
                             asyncOperation.IsError = true;
-                            DataProcessorDebug.LogError("cause an error while clone from byte[] to " + targetStream.uri
+                            DataProcessorDebug.LogError("cause an error while clone from System.IO.Stream to " + targetStream.uri
                                 + System.Environment.NewLine + e.Message + System.Environment.NewLine + e.StackTrace);
                         }
                     }
@@ -206,7 +206,6 @@
                                 targetStream.Timeout = asyncOperation.Timeout;
                                 targetStream.SetAccount(asyncOperation.targetAccount.username, asyncOperation.targetAccount.password);
                             }
-                            bool targetAllowed = targetStream != null && targetStream.TestConnection();
                             bool sourceExists = sourceStream != null && sourceStream.Exists;
                             bool targetExists = targetStream != null && targetStream.Exists;
                             if(!sourceExists && !targetExists)
@@ -216,13 +215,14 @@
                             bool versionChanged = sourceExists && ((sourceVersion == null) || (sourceVersion != targetVersion));
                             if (targetExists && versionChanged)
                             { 
-                                if (!targetStream.Delete()) throw new System.IO.IOException("delete faild."); 
+                                if (!targetStream.Delete()) throw new System.IO.IOException("delete target faild."); 
                                 targetExists = false; 
                             }
+                            bool targetAllowed = targetStream != null && targetStream.TestConnection();
                             if (targetAllowed && sourceExists && targetStream != null && !targetExists)
                             {
                                 targetStream.LastModified = sourceStream.LastModified;
-                                if (!targetStream.Create()) throw new System.IO.IOException("create faild.");
+                                if (!targetStream.Create()) throw new System.IO.IOException("create target faild.");
                                 targetExists = true;
                             }
                             bool complete = targetExists && targetStream.Complete;
