@@ -32,15 +32,14 @@ namespace E.Data
         {
         }
 
-        private static readonly System.Text.RegularExpressions.Regex LastModifiedRegex
-            = new System.Text.RegularExpressions.Regex(@".+(?:\.([0-9]+)\.downloading)$");
+        private static readonly Regex LastModifiedRegex = new Regex(@".+(?:\.([0-9]+)\.downloading)$");
 
         private static readonly Regex fileNameRegex = new Regex(@"(?:[/\\]+([^/\\]+)[/\\]*)$");
 
-        public static string GetDirectoryName(string filePath)
+        private static string GetDirectoryName(string filePath)
         { return fileNameRegex.Replace(filePath, string.Empty); }
 
-        public static string GetFileName(string filePath)
+        private static string GetFileName(string filePath)
         { return fileNameRegex.Match(filePath).Groups[1].Value; }
 
         private class FileStream : DataStream
@@ -379,8 +378,7 @@ namespace E.Data
                         case System.Net.HttpStatusCode.NotFound:
                             break;
                         default:
-                            DataProcessorDebug.LogError("cause an connection error at: " + uri.AbsoluteUri + Environment.NewLine + e.Message + Environment.NewLine + e.StackTrace);
-                            break;
+                            throw new System.IO.IOException("cause an connection error at: " + uri.AbsoluteUri + Environment.NewLine + e.Message + Environment.NewLine + e.StackTrace);
                     }
                     return false;
                 }
@@ -465,6 +463,7 @@ namespace E.Data
                 if (req == null) return null;
                 req.Method = mathod;
                 req.Timeout = timeout;
+                req.AllowAutoRedirect = true;
                 req.KeepAlive = false;
                 if (username != null && password != null)
                 {
@@ -568,20 +567,8 @@ namespace E.Data
                     if (httpWebResponse == null) return false;
                     return true;
                 }
-                catch (System.Net.WebException e)
-                {
-                    if (httpWebResponse == null)
-                        httpWebResponse = e.Response as System.Net.HttpWebResponse;
-                    switch (httpWebResponse.StatusCode)
-                    {
-                        case System.Net.HttpStatusCode.Created:
-                            break;
-                        default:
-                            DataProcessorDebug.LogError("cause an error at " + uri + e.Message + System.Environment.NewLine + e.StackTrace);
-                            break;
-                    }
-                    return false;
-                }
+                catch (System.Exception e)
+                { throw new System.IO.IOException("create faild." + Environment.NewLine + e.Message + Environment.NewLine + e.StackTrace); }
                 finally
                 {
                     httpWebResponse?.Dispose();
@@ -691,20 +678,8 @@ namespace E.Data
                     if (httpWebResponse == null) return false;
                     return true;
                 }
-                catch (System.Net.WebException e)
-                {
-                    if (httpWebResponse == null)
-                        httpWebResponse = e.Response as System.Net.HttpWebResponse;
-                    switch (httpWebResponse.StatusCode)
-                    {
-                        case System.Net.HttpStatusCode.NotFound:
-                            break;
-                        default:
-                            DataProcessorDebug.LogError("cause an error at " + uri + e.Message + System.Environment.NewLine + e.StackTrace);
-                            break;
-                    }
-                    return false;
-                }
+                catch (System.Exception e)
+                { throw new System.IO.IOException("delete faild." + Environment.NewLine + e.Message + Environment.NewLine + e.StackTrace); }
                 finally
                 {
                     httpWebResponse?.Dispose();

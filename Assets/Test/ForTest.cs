@@ -1,4 +1,5 @@
 ﻿using E.Data;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
@@ -29,7 +30,7 @@ namespace E
 
         private void Update()
         {
-            dataProcessor.Tick();
+            dataProcessor?.Tick();
             DrawProgress();
         }
 
@@ -43,7 +44,7 @@ namespace E
 
         private void OnDestroy()
         {
-            dataProcessor.Dispose();
+            dataProcessor?.Dispose();
         }
 
         private void Init()
@@ -60,7 +61,7 @@ namespace E
             {
                 Debug.LogException(exception);
             });
-            dataProcessor = new StandaloneDataProcessor();
+            
         }
 
         private void TestDownload()
@@ -73,16 +74,39 @@ namespace E
             //    @"file:///E:/Downloads/Postman-win64-8.0.2-Setup.exe",
             //    @"file:///D:/Postman-win64-8.0.2-Setup.exe");
 
-            byte[] data = System.Text.Encoding.UTF8.GetBytes("草泥马傻逼吧？");
-            CloneAsyncOperation cloneAsyncOperation1 = dataProcessor.Clone(data, "file:///D:/eatshit.txt");
-            
+            //byte[] data = System.Text.Encoding.UTF8.GetBytes("草泥马傻逼吧？");
+            //CloneAsyncOperation cloneAsyncOperation1 = dataProcessor.Clone(data, "file:///D:/eatshit.txt");
+
             //bool exi = System.IO.Directory.Exists("D:/");
             //Debug.LogError(exi);
             //string[] fileNames = System.IO.Directory.GetFiles
             //            (@"D:/", "*.*.downloading", System.IO.SearchOption.TopDirectoryOnly);
             //Debug.LogError(fileNames.Length);
 
+
+            //IEnumerator<int> iv = Invoker();
+            //while (iv.MoveNext())
+            //{
+            //    Debug.LogError(iv.Current);
+            //}
+
+            Debug.LogError(Data.Utility.BytesLengthToString(153134545454, "<n> <u>/s"));
         }
+
+        IEnumerator<int> Invoker()
+        {
+            
+            yield return 0;
+            yield return 1;
+            yield return 2;
+            yield break;
+        }
+
+        private Stack<IEnumerable<int>> st = new Stack<IEnumerable<int>>();
+
+        private SortedDictionary<int, IEnumerable<int>> dd = new SortedDictionary<int, IEnumerable<int>>();
+        
+        int count = 0;
 
         private static readonly Regex fileNameRegex = new Regex(@"(?:[/\\]+([^/\\]+)[/\\]*)$");
 
