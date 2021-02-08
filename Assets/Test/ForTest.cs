@@ -1,8 +1,10 @@
 ﻿using E.Data;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using UnityEngine;
@@ -90,7 +92,107 @@ namespace E
             //    Debug.LogError(iv.Current);
             //}
 
-            Debug.LogError(Data.Utility.BytesLengthToString(153134545454, "<n> <u>/s"));
+            WebClient webClient = new WebClient();
+
+            //System.IO.Stream ss = webClient.OpenWrite("http://localhost:4322/haha.txt");
+            //byte[] data = System.Text.Encoding.UTF8.GetBytes("食大雕");
+            //ss.Write(data, 0, data.Length);
+            //webClient.Dispose();
+            //webClient.Credentials = new System.Net.NetworkCredential("admin", "123456");
+            //webClient.UploadFile(@"http://localhost:4322/fuck.txt", "PUT", @"F:/fuck.txt");
+            //try
+            //{
+            //    WriteFile("http://localhost:4322/haha.txt");
+            //}
+            //catch(System.Exception e)
+            //{
+            //    Debug.LogError(e.Message + System.Environment.NewLine + e.StackTrace);
+            //}
+            
+            UploadFile("http://localhost:4322/fuck.txt", "F:/fuck.txt");
+        }
+
+        private string UploadFile(string url, string path)
+        {
+            HttpWebRequest request = WebRequest.Create(url) as HttpWebRequest;
+            request.CookieContainer = new CookieContainer();
+            request.AllowAutoRedirect = true;
+            request.Method = "PUT";
+            request.Credentials = new System.Net.NetworkCredential("admin", "123456");
+
+            string boundary = DateTime.Now.Ticks.ToString("X"); // 随机分隔线
+            request.ContentType = "multipart/form-data;charset=utf-8;boundary=" + boundary;
+            byte[] itemBoundaryBytes = Encoding.UTF8.GetBytes("\r\n--" + boundary + "\r\n");
+            byte[] endBoundaryBytes = Encoding.UTF8.GetBytes("\r\n--" + boundary + "--\r\n");
+
+            FileStream fs = new FileStream(path, FileMode.Open, FileAccess.Read);
+            byte[] bArr = new byte[fs.Length];
+            fs.Read(bArr, 0, bArr.Length);
+            fs.Close();
+
+            Stream postStream = request.GetRequestStream();
+            postStream.Write(itemBoundaryBytes, 0, itemBoundaryBytes.Length);
+            postStream.Write(bArr, 0, bArr.Length);
+            postStream.Write(endBoundaryBytes, 0, endBoundaryBytes.Length);
+            postStream.Close();
+
+            HttpWebResponse response = request.GetResponse() as HttpWebResponse;
+            Stream instream = response.GetResponseStream();
+            StreamReader sr = new StreamReader(instream, Encoding.UTF8);
+            string content = sr.ReadToEnd();
+            return content;
+        }
+
+        private bool CreateFile(string fileUri)
+        {
+            System.Net.HttpWebRequest httpWebRequest = null;
+            System.Net.HttpWebResponse httpWebResponse = null;
+            try
+            {
+                httpWebRequest = System.Net.WebRequest.CreateHttp(fileUri);
+                httpWebRequest.AllowAutoRedirect = true;
+                httpWebRequest.Method = System.Net.WebRequestMethods.Http.Put;
+                httpWebRequest.Credentials = new System.Net.NetworkCredential("admin", "123456");
+                httpWebRequest.ContentLength = 0;
+                httpWebResponse = httpWebRequest.GetResponse() as System.Net.HttpWebResponse;
+                return true;
+            }
+            catch (System.Exception e)
+            { throw new System.IO.IOException("create faild." + System.Environment.NewLine + e.Message + System.Environment.NewLine + e.StackTrace); }
+            finally
+            {
+                httpWebResponse?.Dispose();
+                httpWebRequest?.Abort();
+            }
+        }
+
+        private bool WriteFile(string fileUri)
+        {
+            System.Net.HttpWebRequest httpWebRequest = null;
+            System.Net.HttpWebResponse httpWebResponse = null;
+            try
+            {
+                
+                httpWebRequest = System.Net.WebRequest.CreateHttp(fileUri);
+                httpWebRequest.AllowAutoRedirect = true;
+                httpWebRequest.Method = "PUT";
+                httpWebRequest.Credentials = new System.Net.NetworkCredential("admin", "123456");
+                byte[] data = System.Text.Encoding.UTF8.GetBytes("食大雕");
+                httpWebRequest.ContentLength = data.Length;
+                System.IO.Stream stream = httpWebRequest.GetRequestStream();
+                //stream.Write(data, 0, data.Length);
+                //Debug.LogError(stream.Length);
+                stream.Dispose();
+                //httpWebResponse = httpWebRequest.GetResponse() as System.Net.HttpWebResponse;
+                return true;
+            }
+            catch (System.Exception e)
+            { throw new System.IO.IOException("create faild." + System.Environment.NewLine + e.Message + System.Environment.NewLine + e.StackTrace); }
+            finally
+            {
+                httpWebResponse?.Dispose();
+                httpWebRequest?.Abort();
+            }
         }
 
         IEnumerator<int> Invoker()
@@ -101,12 +203,6 @@ namespace E
             yield return 2;
             yield break;
         }
-
-        private Stack<IEnumerable<int>> st = new Stack<IEnumerable<int>>();
-
-        private SortedDictionary<int, IEnumerable<int>> dd = new SortedDictionary<int, IEnumerable<int>>();
-        
-        int count = 0;
 
         private static readonly Regex fileNameRegex = new Regex(@"(?:[/\\]+([^/\\]+)[/\\]*)$");
 

@@ -464,10 +464,8 @@ namespace E.Data
                 req.Method = mathod;
                 req.Timeout = timeout;
                 req.AllowAutoRedirect = true;
-                req.KeepAlive = false;
                 if (username != null && password != null)
                 {
-                    req.PreAuthenticate = true;
                     req.Credentials = new System.Net.NetworkCredential(username, password);
                 }
                 return req;
@@ -561,8 +559,9 @@ namespace E.Data
                 System.Net.HttpWebResponse httpWebResponse = null;
                 try
                 {
-                    httpWebRequest = GetRequest(fileUri, System.Net.WebRequestMethods.Http.Post);
+                    httpWebRequest = GetRequest(fileUri, System.Net.WebRequestMethods.Http.Put);
                     if (httpWebRequest == null) return false;
+                    httpWebRequest.ContentLength = 0;
                     httpWebResponse = GetResponse(httpWebRequest);
                     if (httpWebResponse == null) return false;
                     return true;

@@ -1,6 +1,6 @@
 ﻿namespace E.Data
 {
-    public class Utility
+    public partial class Utility
     {
         private static readonly string[] units = {
                 "B",
@@ -11,7 +11,7 @@
                 "EB",
                 "ZB" };
 
-        private static readonly long[] lengths = {
+        private static readonly ulong[] lengths = {
                 1,
                 1024,
                 1048576,
@@ -22,12 +22,25 @@
 
         /// <summary>
         /// convert bytes length to string. 
-        /// such as 1572864 -> 1.5mb
+        /// such as 1572864 -> "1.5mb"
         /// </summary>
         /// <param name="length"></param>
         /// <param name="pattern"></param>
         /// <returns></returns>
         public static string BytesLengthToString(long length, string pattern = null)
+        {
+            if (length < 0) throw new System.ArgumentException("cannot be less than 0.", "length");
+            return BytesLengthToString((ulong)length, pattern);
+        }
+
+        /// <summary>
+        /// convert bytes length to string. 
+        /// such as 1572864 -> "1.5mb"
+        /// </summary>
+        /// <param name="length"></param>
+        /// <param name="pattern"></param>
+        /// <returns></returns>
+        public static string BytesLengthToString(ulong length, string pattern = null)
         {
             int mark = 0;
             for (int i = 0; i < lengths.Length; i++)
