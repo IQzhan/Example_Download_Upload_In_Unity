@@ -1,14 +1,7 @@
 ﻿using E.Data;
-using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.IO;
-using System.Net;
 using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using UnityEngine;
-using UnityEngine.Networking;
 
 namespace E
 {
@@ -17,7 +10,19 @@ namespace E
         [RuntimeInitializeOnLoadMethod]
         private static void Create()
         {
-            DontDestroyOnLoad(new GameObject("ForTest").AddComponent<ForTest>());
+            ForTest forTest = FindObjectOfType<ForTest>();
+            if(forTest == null)
+            { DontDestroyOnLoad(new GameObject("ForTest").AddComponent<ForTest>()); }
+        }
+
+        public UnityEngine.UI.Text consoleTextArea;
+
+        private void OverridePrint(string message)
+        {
+            if (consoleTextArea != null)
+            {
+                consoleTextArea.text = message;
+            }
         }
 
         private DataProcessor dataProcessor;
@@ -36,11 +41,29 @@ namespace E
             DrawProgress();
         }
 
+        private readonly StringBuilder sb = new StringBuilder();
+
         private void DrawProgress()
         {
-            if(cloneAsyncOperation != null)
+            if(cloneAsyncOperation != null && cloneAsyncOperation.Size > 0)
             {
-                Debug.LogError(cloneAsyncOperation.Progress);
+                sb.Clear();
+                sb.Append("progress: ");
+                sb.Append(cloneAsyncOperation.Progress);
+                sb.Append(System.Environment.NewLine);
+                sb.Append("speed: ");
+                sb.Append(Utility.FormatDataSize(cloneAsyncOperation.Speed, "<n><u>/s"));
+                sb.Append(System.Environment.NewLine);
+                sb.Append("reamain time: ");
+                sb.Append(cloneAsyncOperation.RemainingTime);
+                sb.Append(System.Environment.NewLine);
+                sb.Append("size: ");
+                sb.Append(Utility.FormatDataSize(cloneAsyncOperation.Size));
+                sb.Append(System.Environment.NewLine);
+                sb.Append("processed size: ");
+                sb.Append(Utility.FormatDataSize(cloneAsyncOperation.ProcessedBytes));
+                sb.Append(System.Environment.NewLine);
+                OverridePrint(sb.ToString());
             }
         }
 
@@ -63,16 +86,15 @@ namespace E
             {
                 Debug.LogException(exception);
             });
-            
+            dataProcessor = new StandaloneDataProcessor();
         }
 
         private void TestDownload()
         {
-
             //test 连续 断点
-
             //file to file
-            cloneAsyncOperation = dataProcessor.Clone("file:///E:/Downloads/Windows10.iso", "file:///F:/Windows10.iso");
+            cloneAsyncOperation = dataProcessor.Clone("file:///E:/Downloads/jdk-8u271-windows-x64.exe", "file:///F:/jdk-8u271-windows-x64.exe");
+
             //file to http
             //file to ftp
 

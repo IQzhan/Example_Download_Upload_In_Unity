@@ -79,6 +79,7 @@ namespace E.Data
                         (dir, name + ".*.downloading", System.IO.SearchOption.TopDirectoryOnly);
                     if (fileNames.Length > 0)
                     { fileName = fileNames[0]; fileInfo = null; fileInfo = new System.IO.FileInfo(fileName); }
+                    DataProcessorDebug.LogError("fileName " + fileNames.Length);
                 }
                 return fileName != null;
             }

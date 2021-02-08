@@ -232,6 +232,7 @@
                             else if (sourceExists) length = sourceStream.Length;
                             if (length < 0) throw new System.IO.IOException("cause an error while try to get length of data.");
                             asyncOperation.Size = length;
+                            //DataProcessorDebug.LogError(length.ToString());
                             if (asyncOperation.LoadData) { data = new byte[length]; }
                             long currentPosition = 0;
                             byte[] temp = new byte[CacheSize];

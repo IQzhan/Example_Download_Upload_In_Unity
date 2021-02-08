@@ -20,13 +20,9 @@ namespace E.Data
                 task = Task.Run(() =>
                 {
                     try
-                    {
-                        bodyAction();
-                    }
+                    { bodyAction(); }
                     catch (System.Exception e)
-                    {
-                        DataProcessorDebug.LogException(e);
-                    }
+                    { DataProcessorDebug.LogException(e); }
                 });
             }
 
@@ -39,15 +35,11 @@ namespace E.Data
                     task = null;
                 }
                 catch(System.Exception e)
-                {
-                    DataProcessorDebug.LogException(e);
-                }
+                { DataProcessorDebug.LogException(e); }
             }
         }
 
         protected override ITask GetTaskInstance()
-        {
-            return new DataTask();
-        }
+        { return new DataTask(); }
     }
 }
