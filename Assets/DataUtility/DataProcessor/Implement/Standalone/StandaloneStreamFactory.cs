@@ -264,37 +264,6 @@ namespace E.Data
 
         private class HttpStream : DataStream
         {
-            /*GET
-            通过请求URI得到资源
-            POST,
-            用于添加新的内容
-            PUT
-            用于修改某个内容
-            DELETE,
-            删除某个内容
-            CONNECT,
-            用于代理进行传输，如使用SSL
-            OPTIONS
-            询问可以执行哪些方法
-            PATCH,
-            部分文档更改
-            PROPFIND, (wedav)
-            查看属性
-            PROPPATCH, (wedav)
-            设置属性
-            MKCOL, (wedav)
-            创建集合（文件夹）
-            COPY, (wedav)
-            拷贝
-            MOVE, (wedav)
-            移动
-            LOCK, (wedav)
-            加锁
-            UNLOCK (wedav)
-            解锁
-            TRACE
-            用于远程诊断服务器*/
-
             public HttpStream(in System.Uri uri, StandaloneStreamFactory factory) : base(uri) { this.factory = factory; }
 
             private StandaloneStreamFactory factory;
@@ -337,9 +306,7 @@ namespace E.Data
                 try
                 {
                     testRequest = GetRequest(testUri, System.Net.WebRequestMethods.Http.Head);
-                    if (testRequest == null) return false;
                     testResponse = GetResponse(testRequest);
-                    if (testResponse == null) return false;
                     return true;
                 }
                 catch (System.Net.WebException e)
@@ -362,9 +329,7 @@ namespace E.Data
                 try
                 {
                     testRequest = GetRequest(uri.AbsoluteUri, System.Net.WebRequestMethods.Http.Head);
-                    if (testRequest == null) return false;
                     testResponse = GetResponse(testRequest);
-                    if (testResponse == null) return false;
                     length = testResponse.ContentLength;
                     lastModified = testResponse.LastModified;
                     return true;
@@ -429,9 +394,7 @@ namespace E.Data
             }
 
             public override bool Create()
-            {
-                return CreateFile(uri.AbsoluteUri);
-            }
+            { return CreateFile(uri.AbsoluteUri); }
 
             public override int Read(byte[] buffer, int offset, int count)
             {
@@ -465,9 +428,7 @@ namespace E.Data
                 req.Timeout = timeout;
                 req.AllowAutoRedirect = true;
                 if (username != null && password != null)
-                {
-                    req.Credentials = new System.Net.NetworkCredential(username, password);
-                }
+                { req.Credentials = new System.Net.NetworkCredential(username, password); }
                 return req;
             }
 
@@ -486,6 +447,8 @@ namespace E.Data
 
             private void DisposeReqRsp()
             {
+                if(webRequest != null && webResponse == null)
+                { webResponse = GetResponse(webRequest); }
                 webResponse?.Dispose();
                 webResponse = null;
                 webRequest?.Abort();
@@ -512,7 +475,6 @@ namespace E.Data
                     if (requestStream == null)
                     {
                         webRequest = GetRequest(uri.AbsoluteUri, System.Net.WebRequestMethods.Http.Put);
-                        if (webRequest == null) return null;
                         webRequest.AllowWriteStreamBuffering = true;
                         requestStream = GetRequestStream(webRequest);
                     }
@@ -540,10 +502,8 @@ namespace E.Data
                     if (responseStream == null)
                     {
                         webRequest = GetRequest(uri.AbsoluteUri, System.Net.WebRequestMethods.Http.Get);
-                        if (webRequest == null) return null;
                         webRequest.AddRange(Position);
                         webResponse = GetResponse(webRequest);
-                        if (webResponse == null) return null;
                         responseStream = GetResponseStream(webResponse);
                     }
                     return responseStream;
@@ -560,14 +520,12 @@ namespace E.Data
                 try
                 {
                     httpWebRequest = GetRequest(fileUri, System.Net.WebRequestMethods.Http.Put);
-                    if (httpWebRequest == null) return false;
                     httpWebRequest.ContentLength = 0;
                     httpWebResponse = GetResponse(httpWebRequest);
-                    if (httpWebResponse == null) return false;
                     return true;
                 }
                 catch (System.Exception e)
-                { throw new System.IO.IOException("create faild." + Environment.NewLine + e.Message + Environment.NewLine + e.StackTrace); }
+                { throw new System.IO.IOException("create file faild." + Environment.NewLine + e.Message + Environment.NewLine + e.StackTrace); }
                 finally
                 {
                     httpWebResponse?.Dispose();
@@ -581,80 +539,26 @@ namespace E.Data
             {
                 if (dirUri == null) return false;
                 if (hostRegex.IsMatch(dirUri)) return TestConnection();
-                string baseName = GetDirectoryName(dirUri);
-                if (!CreateDir(baseName)) { return false; }
-                if (!BasedDirExists(dirUri) && !BasedDirCreate(dirUri)) { return false; }
-                return true;
-            }
-
-            private bool BasedDirExists(string dirUri)
-            {
-                if (dirUri == null) return false;
-                System.Net.HttpWebRequest httpWebRequest = null;
-                System.Net.HttpWebResponse httpWebResponse = null;
-                System.IO.StreamReader streamReader = null;
-                try
-                {
-                    string dir = GetDirectoryName(dirUri);
-                    httpWebRequest = GetRequest(dir, System.Net.WebRequestMethods.Ftp.ListDirectory);
-                    if (httpWebRequest == null) return false;
-                    httpWebResponse = GetResponse(httpWebRequest);
-                    if (httpWebResponse == null) return false;
-                    System.IO.Stream respStream = GetResponseStream(httpWebResponse);
-                    if (respStream == null) return false;
-                    streamReader = new System.IO.StreamReader(respStream);
-                    if (streamReader == null) return false;
-                    string name = GetFileName(dirUri);
-                    string line = null;
-                    while ((line = streamReader.ReadLine()) != null)
-                    { if (line == name) { return true; } }
-                    return false;
-                }
-                catch (System.Net.WebException e)
-                {
-                    if (httpWebResponse == null)
-                        httpWebResponse = e.Response as System.Net.HttpWebResponse;
-                    switch (httpWebResponse.StatusCode)
-                    {
-                        //case System.Net.FtpStatusCode.ActionNotTakenFileUnavailable:
-                        //case System.Net.FtpStatusCode.ActionNotTakenFileUnavailableOrBusy:
-                        //case System.Net.FtpStatusCode.ActionNotTakenFilenameNotAllowed:
-                        //    return false;
-                        default: throw e;
-                    }
-                }
-                finally
-                {
-                    streamReader?.Dispose();
-                    httpWebResponse?.Dispose();
-                    httpWebRequest?.Abort();
-                }
-            }
-
-            private bool BasedDirCreate(string dirUri)
-            {
-                if (dirUri == null) return false;
                 System.Net.HttpWebRequest httpWebRequest = null;
                 System.Net.HttpWebResponse httpWebResponse = null;
                 try
                 {
-                    httpWebRequest = GetRequest(dirUri, System.Net.WebRequestMethods.Ftp.MakeDirectory);
-                    if (httpWebRequest == null) return false;
+                    httpWebRequest = GetRequest(dirUri, System.Net.WebRequestMethods.Http.MkCol);
                     httpWebResponse = GetResponse(httpWebRequest);
-                    if (httpWebResponse == null) return false;
                     return true;
                 }
                 catch (System.Net.WebException e)
                 {
                     if (httpWebResponse == null)
-                        httpWebResponse = e.Response as System.Net.HttpWebResponse;
+                    { httpWebResponse = e.Response as System.Net.HttpWebResponse; }
                     switch (httpWebResponse.StatusCode)
                     {
-                        //case System.Net.FtpStatusCode.ActionNotTakenFileUnavailable:
-                        //case System.Net.FtpStatusCode.ActionNotTakenFileUnavailableOrBusy:
-                        //case System.Net.FtpStatusCode.ActionNotTakenFilenameNotAllowed:
-                        //    return false;
-                        default: throw e;
+                        case System.Net.HttpStatusCode.Conflict:
+                            return CreateDir(GetDirectoryName(dirUri)) && CreateDir(dirUri);
+                        case System.Net.HttpStatusCode.MethodNotAllowed:
+                            return true;
+                        default: 
+                            throw new System.IO.IOException("create dir faild." + Environment.NewLine + e.Message + Environment.NewLine + e.StackTrace);
                     }
                 }
                 finally
@@ -672,20 +576,22 @@ namespace E.Data
                 try
                 {
                     httpWebRequest = GetRequest(fileUri, "DELETE");
-                    if (httpWebRequest == null) return false;
                     httpWebResponse = GetResponse(httpWebRequest);
-                    if (httpWebResponse == null) return false;
                     return true;
                 }
-                catch (System.Exception e)
-                { throw new System.IO.IOException("delete faild." + Environment.NewLine + e.Message + Environment.NewLine + e.StackTrace); }
+                catch (System.Net.WebException e)
+                { 
+                    if(httpWebResponse == null)
+                    { httpWebResponse = e.Response as System.Net.HttpWebResponse; }
+                    if (httpWebResponse.StatusCode == System.Net.HttpStatusCode.NotFound) return true;
+                    throw new System.IO.IOException("delete file faild." + Environment.NewLine + e.Message + Environment.NewLine + e.StackTrace); 
+                }
                 finally
                 {
                     httpWebResponse?.Dispose();
                     httpWebRequest?.Abort();
                 }
             }
-
         }
 
         private class FtpStream : DataStream
@@ -995,13 +901,9 @@ namespace E.Data
                 {
                     if (!dirUri.EndsWith(slash)) dirUri += slash;
                     ftpWebRequest = GetRequest(dirUri, System.Net.WebRequestMethods.Ftp.ListDirectory);
-                    if(ftpWebRequest == null) return null;
                     ftpWebResponse = GetResponse(ftpWebRequest);
-                    if (ftpWebResponse == null) return null;
                     System.IO.Stream responseStream = ftpWebResponse.GetResponseStream();
-                    if (responseStream == null) return null;
                     streamReader = new System.IO.StreamReader(responseStream, true);
-                    if (streamReader == null) return null;
                     string line = null;
                     List<string> lines = new List<string>();
                     while ((line = streamReader.ReadLine()) != null)
@@ -1028,39 +930,6 @@ namespace E.Data
                 }
             }
 
-            //TODO
-            private bool FileExists(string fileUri)
-            {
-                if (fileUri == null) throw new System.ArgumentNullException("fileUri");
-                System.Net.FtpWebRequest ftpWebRequest = null;
-                System.Net.FtpWebResponse ftpWebResponse = null;
-                try
-                {
-                    ftpWebRequest = GetRequest(fileUri, System.Net.WebRequestMethods.Ftp.GetDateTimestamp);
-                    ftpWebResponse = GetResponse(ftpWebRequest);
-                    return true;
-                }
-                catch (System.Net.WebException e)
-                {
-                    if (ftpWebResponse == null)
-                        ftpWebResponse = e.Response as System.Net.FtpWebResponse;
-                    switch (ftpWebResponse.StatusCode)
-                    {
-                        case System.Net.FtpStatusCode.ActionNotTakenFileUnavailable:
-                        case System.Net.FtpStatusCode.ActionNotTakenFilenameNotAllowed:
-                            return false;
-                        case System.Net.FtpStatusCode.ActionNotTakenFileUnavailableOrBusy:
-                            return true;
-                        default: throw e;
-                    }
-                }
-                finally
-                {
-                    ftpWebResponse?.Dispose();
-                    ftpWebRequest?.Abort();
-                }
-            }
-
             private bool CreateFile(string fileUri)
             {
                 if (fileUri == null) return false;
@@ -1071,9 +940,7 @@ namespace E.Data
                 try
                 {
                     ftpWebRequest = GetRequest(fileUri, System.Net.WebRequestMethods.Ftp.AppendFile);
-                    if (ftpWebRequest == null) return false;
                     ftpWebResponse = GetResponse(ftpWebRequest);
-                    if (ftpWebResponse == null) return false;
                     return true;
                 }
                 catch (System.Net.WebException e)
@@ -1101,13 +968,40 @@ namespace E.Data
             {
                 if (dirUri == null) return false;
                 if (hostRegex.IsMatch(dirUri)) return TestConnection();
-                string baseName = GetDirectoryName(dirUri);
-                if (!CreateDir(baseName)) { return false; }
-                if (!BasedDirExists(dirUri) && !BasedDirCreate(dirUri)) { return false; }
-                return true;
+                if (DirExists(dirUri)) return true;
+                return CreateDir0(dirUri);
             }
 
-            private bool BasedDirExists(string dirUri)
+            private bool CreateDir0(string dirUri)
+            {
+                System.Net.FtpWebRequest ftpWebRequest = null;
+                System.Net.FtpWebResponse ftpWebResponse = null;
+                try
+                {
+                    ftpWebRequest = GetRequest(dirUri, System.Net.WebRequestMethods.Ftp.MakeDirectory);
+                    ftpWebResponse = GetResponse(ftpWebRequest);
+                    return true;
+                }
+                catch (System.Net.WebException e)
+                {
+                    if (ftpWebResponse == null)
+                        ftpWebResponse = e.Response as System.Net.FtpWebResponse;
+                    switch (ftpWebResponse.StatusCode)
+                    {
+                        case System.Net.FtpStatusCode.ActionNotTakenFileUnavailable:
+                            return CreateDir0(GetDirectoryName(dirUri)) && CreateDir0(dirUri);
+                        default: break;
+                    }
+                    throw new System.IO.IOException("create dirctory faild." + Environment.NewLine + e.Message + Environment.NewLine + e.StackTrace);
+                }
+                finally
+                {
+                    ftpWebResponse?.Dispose();
+                    ftpWebRequest?.Abort();
+                }
+            }
+
+            private bool DirExists(string dirUri)
             {
                 if (dirUri == null) return false;
                 System.Net.FtpWebRequest ftpWebRequest = null;
@@ -1116,14 +1010,10 @@ namespace E.Data
                 try
                 {
                     string dir = GetDirectoryName(dirUri);
-                    ftpWebRequest = GetRequest(dir, System.Net.WebRequestMethods.Ftp.ListDirectory);
-                    if (ftpWebRequest == null) return false;
+                    ftpWebRequest = GetRequest(dir + slash, System.Net.WebRequestMethods.Ftp.ListDirectory);
                     ftpWebResponse = GetResponse(ftpWebRequest);
-                    if (ftpWebResponse == null) return false;
                     System.IO.Stream respStream = GetResponseStream(ftpWebResponse);
-                    if (respStream == null) return false;
                     streamReader = new System.IO.StreamReader(respStream);
-                    if (streamReader == null) return false;
                     string name = GetFileName(dirUri);
                     string line = null;
                     while ((line = streamReader.ReadLine()) != null)
@@ -1145,38 +1035,6 @@ namespace E.Data
                 finally
                 {
                     streamReader?.Dispose();
-                    ftpWebResponse?.Dispose();
-                    ftpWebRequest?.Abort();
-                }
-            }
-
-            private bool BasedDirCreate(string dirUri)
-            {
-                if (dirUri == null) return false;
-                System.Net.FtpWebRequest ftpWebRequest = null;
-                System.Net.FtpWebResponse ftpWebResponse = null;
-                try
-                {
-                    ftpWebRequest = GetRequest(dirUri, System.Net.WebRequestMethods.Ftp.MakeDirectory);
-                    if (ftpWebRequest == null) return false;
-                    ftpWebResponse = GetResponse(ftpWebRequest);
-                    if (ftpWebResponse == null) return false;
-                    return true;
-                }
-                catch (System.Net.WebException e)
-                {
-                    if (ftpWebResponse == null)
-                        ftpWebResponse = e.Response as System.Net.FtpWebResponse;
-                    switch (ftpWebResponse.StatusCode)
-                    {
-                        case System.Net.FtpStatusCode.ActionNotTakenFileUnavailable:
-                        case System.Net.FtpStatusCode.ActionNotTakenFileUnavailableOrBusy:
-                            return false;
-                        default: throw new System.IO.IOException("create dirctory faild." + Environment.NewLine + e.Message + Environment.NewLine + e.StackTrace);
-                    }
-                }
-                finally
-                {
                     ftpWebResponse?.Dispose();
                     ftpWebRequest?.Abort();
                 }
