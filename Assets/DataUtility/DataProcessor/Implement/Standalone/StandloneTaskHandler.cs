@@ -34,6 +34,7 @@ namespace E.Data
             {
                 try
                 {
+                    
                     cancelSource?.Cancel();
                     task?.Dispose();
                     
