@@ -91,15 +91,39 @@ namespace E
 
         private void TestDownload()
         {
+            string fileUri0 = "file:///E:/Downloads/jdk-8u271-windows-x64.exe";
+            string fileUri1 = "file:///F:/jdk-8u271-windows-x64.exe";
+            string fileUri2 = "file:///E:/Downloads/Windows10.iso";
+            string fileUri3 = "file:///F:/Windows10.iso";
+
+            string ftpUri0 = "ftp://localhost/";
+            string ftpUri1 = "ftp://localhost/";
+
             //test 连续 断点
             //file to file
-            cloneAsyncOperation = dataProcessor.Clone("file:///E:/Downloads/jdk-8u271-windows-x64.exe", "file:///F:/jdk-8u271-windows-x64.exe");
-
+            cloneAsyncOperation = dataProcessor.Clone(fileUri2, fileUri3);
+            cloneAsyncOperation.LoadData = false;
+            cloneAsyncOperation.ForceTestConnection = true;
+            cloneAsyncOperation.onClose += () =>
+            {
+                if (cloneAsyncOperation.IsProcessingComplete)
+                {
+                    if(cloneAsyncOperation.Data != null)
+                    {
+                        Debug.LogError(cloneAsyncOperation.Data.Length);
+                    }
+                }
+            };
+            
             //file to http
+            //cloneAsyncOperation = dataProcessor.Clone("file:///E:/Downloads/jdk-8u271-windows-x64.exe", "file:///F:/jdk-8u271-windows-x64.exe");
             //file to ftp
+            //cloneAsyncOperation = dataProcessor.Clone("file:///E:/Downloads/jdk-8u271-windows-x64.exe", "file:///F:/jdk-8u271-windows-x64.exe");
 
             //http to file
+
             //http to http
+
             //http to ftp
 
             //ftp to file
@@ -171,6 +195,7 @@ namespace E
         //{ return response.GetResponseStream(); }
 
         //private class StandaloneStreamFactoryInstance : StandaloneStreamFactory { }
+
 
     }
 }

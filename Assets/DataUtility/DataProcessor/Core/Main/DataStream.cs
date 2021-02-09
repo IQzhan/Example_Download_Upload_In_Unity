@@ -24,7 +24,7 @@
         /// <summary>
         /// test host connection and return true if successed, save the connection result
         /// </summary>
-        public abstract bool TestConnection();
+        public abstract bool TestConnection(bool force);
 
         /// <summary>
         /// test connection and return true if successed.

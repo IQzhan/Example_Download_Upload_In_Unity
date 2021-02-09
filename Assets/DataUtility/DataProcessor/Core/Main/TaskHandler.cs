@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Collections.Generic;
 
 namespace E.Data
@@ -101,8 +100,8 @@ namespace E.Data
         {
             if (!disposedValue)
             {
-                if (disposing)
-                { ClearQueue(); }
+                if (disposing) {  }
+                ClearQueue();
                 EndTasks();
                 disposedValue = true;
             }

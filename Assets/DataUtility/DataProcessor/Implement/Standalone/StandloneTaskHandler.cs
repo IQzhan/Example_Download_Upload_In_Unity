@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Threading;
+using System.Threading.Tasks;
 
 namespace E.Data
 {
@@ -14,25 +15,32 @@ namespace E.Data
             }
 
             private Task task;
-
+            
+            private CancellationTokenSource cancelSource;
+            
             public override void RunTask()
             {
+                cancelSource = new CancellationTokenSource();
                 task = Task.Run(() =>
                 {
                     try
                     { bodyAction(); }
                     catch (System.Exception e)
                     { DataProcessorDebug.LogException(e); }
-                });
+                }, cancelSource.Token);
             }
 
             public override void RunClear()
             {
                 try
                 {
-                    cleanAction();
+                    cancelSource?.Cancel();
                     task?.Dispose();
+                    
+                    cancelSource?.Dispose();
                     task = null;
+                    cancelSource = null;
+                    cleanAction();
                 }
                 catch(System.Exception e)
                 { DataProcessorDebug.LogException(e); }

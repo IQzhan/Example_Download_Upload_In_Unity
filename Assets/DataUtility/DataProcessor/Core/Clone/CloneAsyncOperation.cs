@@ -5,19 +5,6 @@
         protected CloneAsyncOperation() { }
 
         /// <summary>
-        /// TODO ?
-        /// </summary>
-        public bool ForceTestConnection
-        { 
-            get { return forceTestConnection; } 
-            set 
-            { 
-                if (!IsWorking) { forceTestConnection = value; } 
-                else throw new System.MemberAccessException("can't access ForceTestConnection while task is working."); 
-            } 
-        }
-
-        /// <summary>
         /// load data while downloading?
         /// </summary>
         public bool LoadData
@@ -69,8 +56,6 @@
         /// </summary>
         public double RemainingTime
         { get { return CalculateRemainingTime(ProcessedBytes, Speed); } }
-
-        private bool forceTestConnection = false;
 
         private bool loadData = true;
 

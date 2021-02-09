@@ -48,11 +48,13 @@ namespace E.Data
 
             private const string extend = @".downloading";
 
+            private const string splash = "/";
+
             public override void SetAccount(string username, string password) { }
 
             public override int Timeout { get => 0; set { } }
 
-            public override bool TestConnection() { return true; }
+            public override bool TestConnection(bool force) { return true; }
 
             public override bool Exists
             { get { return RefreshFileName(); } }
@@ -73,13 +75,12 @@ namespace E.Data
                 else
                 {
                     string name = GetFileName(localPath);
-                    string dir = GetDirectoryName(localPath);
+                    string dir = GetDirectoryName(localPath) + splash;
                     if (!System.IO.Directory.Exists(dir)) return false;
                     string[] fileNames = System.IO.Directory.GetFiles
                         (dir, name + ".*.downloading", System.IO.SearchOption.TopDirectoryOnly);
                     if (fileNames.Length > 0)
                     { fileName = fileNames[0]; fileInfo = null; fileInfo = new System.IO.FileInfo(fileName); }
-                    DataProcessorDebug.LogError("fileName " + fileNames.Length);
                 }
                 return fileName != null;
             }
@@ -218,7 +219,7 @@ namespace E.Data
                     DisposeWriteStream();
                     if(readStream == null)
                     { 
-                        readStream = System.IO.File.Open(FileName, System.IO.FileMode.Open, System.IO.FileAccess.Read);
+                        readStream = System.IO.File.Open(FileName, System.IO.FileMode.Open, System.IO.FileAccess.Read, System.IO.FileShare.Read);
                         readStream.Position = position;
                     }
                     return readStream;
@@ -284,11 +285,11 @@ namespace E.Data
             }
 
             public override bool Exists
-            { get { return TestConnection() && Refresh(); } }
+            { get { return TestConnection(false) && Refresh(); } }
 
             private static readonly Regex HostUriRegex = new Regex(@"http[s]{0,1}://[^/\\]+");
 
-            public override bool TestConnection()
+            public override bool TestConnection(bool force)
             { return TestHostConnection(HostUriRegex.Match(uri.AbsoluteUri).Value); }
 
             private bool TestHostConnection(string hostUri)
@@ -539,7 +540,7 @@ namespace E.Data
             private bool CreateDir(string dirUri)
             {
                 if (dirUri == null) return false;
-                if (hostRegex.IsMatch(dirUri)) return TestConnection();
+                if (hostRegex.IsMatch(dirUri)) return TestConnection(false);
                 System.Net.HttpWebRequest httpWebRequest = null;
                 System.Net.HttpWebResponse httpWebResponse = null;
                 try
@@ -616,11 +617,11 @@ namespace E.Data
             }
 
             public override bool Exists
-            { get { return TestConnection() && RefreshFileName(); } }
+            { get { return TestConnection(false) && RefreshFileName(); } }
 
             private static readonly Regex HostUriRegex = new Regex(@"ftp://[^/\\]+");
 
-            public override bool TestConnection()
+            public override bool TestConnection(bool force)
             { return TestHostConnection(HostUriRegex.Match(uri.AbsoluteUri).Value); }
 
             private bool TestHostConnection(string hostUri)
@@ -968,7 +969,7 @@ namespace E.Data
             private bool CreateDir(string dirUri)
             {
                 if (dirUri == null) return false;
-                if (hostRegex.IsMatch(dirUri)) return TestConnection();
+                if (hostRegex.IsMatch(dirUri)) return TestConnection(false);
                 if (DirExists(dirUri)) return true;
                 return CreateDir0(dirUri);
             }

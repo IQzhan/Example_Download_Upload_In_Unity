@@ -36,15 +36,8 @@ namespace E.Data
 
         public void AddCommand(in System.Action body, in System.Func<bool> condition = null)
         {
-            Enqueue(body, condition);
-        }
-
-        private void Enqueue(in System.Action body, in System.Func<bool> condition = null)
-        {
             if (body != null)
-            {
-                commands.Enqueue(new Command(body, condition));
-            }
+            { commands.Enqueue(new Command(body, condition)); }
         }
 
         public void Tick()

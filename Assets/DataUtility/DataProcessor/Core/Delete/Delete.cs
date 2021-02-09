@@ -29,7 +29,7 @@
                             asyncOperation.IsWorking = true;
                             targetStream.Timeout = asyncOperation.Timeout;
                             targetStream.SetAccount(asyncOperation.targetAccount.username, asyncOperation.targetAccount.password);
-                            if (targetStream.TestConnection())
+                            if (targetStream.TestConnection(asyncOperation.ForceTestConnection))
                             { asyncOperation.Progress = 0.1f; }
                             else throw new System.Exception(@"connecting faild.");
                             if (targetStream.Exists)

@@ -29,7 +29,7 @@
                             asyncOperation.IsWorking = true;
                             targetStream.Timeout = asyncOperation.Timeout;
                             targetStream.SetAccount(asyncOperation.targetAccount.username, asyncOperation.targetAccount.password);
-                            bool targetAllowed = targetStream.TestConnection();
+                            bool targetAllowed = targetStream.TestConnection(asyncOperation.ForceTestConnection);
                             if (!targetAllowed) throw new System.IO.IOException("target connecting faild.");
                             if (targetStream.Exists && !targetStream.Delete()) throw new System.IO.IOException("delete target faild.");
                             targetStream.LastModified = System.DateTime.Now;
@@ -99,7 +99,7 @@
                             asyncOperation.IsWorking = true;
                             targetStream.Timeout = asyncOperation.Timeout;
                             targetStream.SetAccount(asyncOperation.targetAccount.username, asyncOperation.targetAccount.password);
-                            bool targetAllowed = targetStream.TestConnection();
+                            bool targetAllowed = targetStream.TestConnection(asyncOperation.ForceTestConnection);
                             if (!targetAllowed) throw new System.IO.IOException("target connecting faild.");
                             if (targetStream.Exists && !targetStream.Delete()) throw new System.IO.IOException("delete target faild.");
                             targetStream.LastModified = System.DateTime.Now;
@@ -206,8 +206,10 @@
                                 targetStream.Timeout = asyncOperation.Timeout;
                                 targetStream.SetAccount(asyncOperation.targetAccount.username, asyncOperation.targetAccount.password);
                             }
-                            bool sourceExists = sourceStream != null && sourceStream.Exists;
-                            bool targetExists = targetStream != null && targetStream.Exists;
+                            bool sourceAllowed = sourceStream != null && sourceStream.TestConnection(asyncOperation.ForceTestConnection);
+                            bool targetAllowed = targetStream != null && targetStream.TestConnection(asyncOperation.ForceTestConnection);
+                            bool sourceExists = sourceAllowed && sourceStream.Exists;
+                            bool targetExists = targetAllowed && targetStream.Exists;
                             if(!sourceExists && !targetExists)
                             { throw new System.IO.IOException("source and target are both not exists."); }
                             string sourceVersion = sourceExists ? sourceStream.Version : null;
@@ -218,7 +220,6 @@
                                 if (!targetStream.Delete()) throw new System.IO.IOException("delete target faild."); 
                                 targetExists = false; 
                             }
-                            bool targetAllowed = targetStream != null && targetStream.TestConnection();
                             if (targetAllowed && sourceExists && targetStream != null && !targetExists)
                             {
                                 targetStream.LastModified = sourceStream.LastModified;
@@ -254,7 +255,7 @@
                             }
                             //set currentPosition to target length if exists
                             if (targetExists)
-                            { 
+                            {
                                 currentPosition = targetStream.Length;
                                 asyncOperation.ProcessedBytes = currentPosition;
                                 if (currentPosition == length) { targetStream.Complete = true; return; }
