@@ -8,18 +8,18 @@
 
         public static bool enableLogException = true;
 
-        private static System.Action<string> logAction;
+        private static System.Action<object> logAction;
 
-        private static System.Action<string> logErrorAction;
+        private static System.Action<object> logErrorAction;
 
         private static System.Action<System.Exception> logExceptionAction;
 
-        public static void OverrideLog(System.Action<string> logAction)
+        public static void OverrideLog(System.Action<object> logAction)
         {
             DataProcessorDebug.logAction = logAction;
         }
 
-        public static void OverrideLogError(System.Action<string> logErrorAction)
+        public static void OverrideLogError(System.Action<object> logErrorAction)
         {
             DataProcessorDebug.logErrorAction = logErrorAction;
         }
@@ -29,7 +29,7 @@
             DataProcessorDebug.logExceptionAction = logExceptionAction;
         }
 
-        public static void Log(string message)
+        public static void Log(object message)
         {
             if (enableLog)
             {
@@ -37,7 +37,7 @@
             }
         }
 
-        public static void LogError(string message)
+        public static void LogError(object message)
         {
             if (enableLogError)
             {

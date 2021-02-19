@@ -75,11 +75,11 @@ namespace E
 
         private void Init()
         {
-            DataProcessorDebug.OverrideLog((string message) =>
+            DataProcessorDebug.OverrideLog((object message) =>
             {
                 Debug.Log(message);
             });
-            DataProcessorDebug.OverrideLogError((string message) =>
+            DataProcessorDebug.OverrideLogError((object message) =>
             {
                 Debug.LogError(message);
             });
@@ -120,19 +120,19 @@ namespace E
             //};
 
             //file to http
-            //cloneAsyncOperation = dataProcessor.Clone(fileUri0, httpUri0);
-            //cloneAsyncOperation.LoadData = false;
-            //cloneAsyncOperation.ForceTestConnection = true;
-            //cloneAsyncOperation.targetAccount = new ConnectionAsyncOperation.Account()
-            //{ username = "admin", password = "123456" };
-            //cloneAsyncOperation.onClose += () =>
-            //{
-            //    if (cloneAsyncOperation.IsProcessingComplete)
-            //    {
-            //        if (cloneAsyncOperation.Data != null)
-            //        { Debug.LogError(cloneAsyncOperation.Data.Length); }
-            //    }
-            //};
+            cloneAsyncOperation = dataProcessor.Clone(fileUri0, httpUri0);
+            cloneAsyncOperation.LoadData = false;
+            cloneAsyncOperation.ForceTestConnection = true;
+            cloneAsyncOperation.targetAccount = new ConnectionAsyncOperation.Account()
+            { username = "admin", password = "123456" };
+            cloneAsyncOperation.onClose += () =>
+            {
+                if (cloneAsyncOperation.IsProcessingComplete)
+                {
+                    if (cloneAsyncOperation.Data != null)
+                    { Debug.LogError(cloneAsyncOperation.Data.Length); }
+                }
+            };
 
             //file to ftp
             //cloneAsyncOperation = dataProcessor.Clone("file:///E:/Downloads/jdk-8u271-windows-x64.exe", "file:///F:/jdk-8u271-windows-x64.exe");
@@ -147,113 +147,53 @@ namespace E
             //ftp to http
             //ftp to ftp
 
-            username = "admin";
-            password = "123456";
-            ForceTestConnection("http://localhost:4322");
+            //username = "admin";
+            //password = "123456";
+            //string githubcom = "https://github.com/";
+            //string localhttp = "http://localhost:4322/";
+            //Debug.Log(ForceTestConnection(githubcom));
+            //Debug.Log(ForceTestConnection(localhttp));
         }
 
-        string username;
+        //string username;
 
-        string password;
+        //string password;
 
-        private bool ForceTestConnection(string testUri)
-        {
-            System.Net.HttpWebRequest testRequest = null;
-            System.Net.HttpWebResponse testResponse = null;
-            try
-            {
-                testRequest = GetRequest(testUri, System.Net.WebRequestMethods.Http.Connect);
-                testResponse = GetResponse(testRequest);
-                return true;
-            }
-            catch (System.Net.WebException e)
-            {
-                DataProcessorDebug.LogError("cause an connection error at: " + testUri + Environment.NewLine + e.Message + Environment.NewLine + e.StackTrace);
-                return false;
-            }
-            finally
-            {
-                testRequest?.Abort();
-                testResponse?.Dispose();
-            }
-        }
-
-        private System.Net.HttpWebRequest GetRequest(string uri, string mathod)
-        {
-            System.Net.HttpWebRequest req = System.Net.WebRequest.Create(uri) as System.Net.HttpWebRequest;
-            if (req == null) return null;
-            req.Method = mathod;
-            req.AllowAutoRedirect = true;
-            if (username != null && password != null)
-            { req.Credentials = new System.Net.NetworkCredential(username, password); }
-            return req;
-        }
-
-        private System.Net.HttpWebResponse GetResponse(System.Net.HttpWebRequest request)
-        { return request.GetResponse() as System.Net.HttpWebResponse; }
-
-        //private static readonly Regex fileNameRegex = new Regex(@"(?:[/\\]+([^/\\]+)[/\\]*)$");
-
-        //public static string GetDirectoryName(string filePath)
-        //{ return fileNameRegex.Replace(filePath, string.Empty); }
-
-        //public static string GetFileName(string filePath)
-        //{ return fileNameRegex.Match(filePath).Groups[1].Value; }
-
-        //private bool FileExists(string fileUri)
+        //private bool ForceTestConnection(string testUri)
         //{
-        //    if (fileUri == null) throw new System.ArgumentNullException("fileUri");
-        //    System.Net.FtpWebRequest ftpWebRequest = null;
-        //    System.Net.FtpWebResponse ftpWebResponse = null;
+        //    System.Net.HttpWebRequest testRequest = null;
+        //    System.Net.HttpWebResponse testResponse = null;
         //    try
         //    {
-        //        ftpWebRequest = GetRequest(fileUri, System.Net.WebRequestMethods.Ftp.GetFileSize);
-        //        ftpWebResponse = GetResponse(ftpWebRequest);
+        //        testRequest = GetRequest(testUri, System.Net.WebRequestMethods.Http.Head);
+        //        testResponse = GetResponse(testRequest);
         //        return true;
         //    }
         //    catch (System.Net.WebException e)
         //    {
-        //        if (ftpWebResponse == null)
-        //            ftpWebResponse = e.Response as System.Net.FtpWebResponse;
-        //        switch (ftpWebResponse.StatusCode)
-        //        {
-        //            case System.Net.FtpStatusCode.ActionNotTakenFileUnavailable:
-        //            case System.Net.FtpStatusCode.ActionNotTakenFilenameNotAllowed:
-        //                return false;
-        //            case System.Net.FtpStatusCode.ActionNotTakenFileUnavailableOrBusy:
-        //                return true;
-        //            default: throw e;
-        //        }
+        //        DataProcessorDebug.LogError("cause an connection error at: " + testUri + Environment.NewLine + e.Message + Environment.NewLine + e.StackTrace);
+        //        return false;
         //    }
         //    finally
         //    {
-        //        ftpWebResponse?.Dispose();
-        //        ftpWebRequest?.Abort();
+        //        testRequest?.Abort();
+        //        testResponse?.Dispose();
         //    }
         //}
 
-        //private System.Net.FtpWebRequest GetRequest(string uri, string mathod)
+        //private System.Net.HttpWebRequest GetRequest(string uri, string mathod)
         //{
-        //    System.Net.FtpWebRequest req = (System.Net.FtpWebRequest)System.Net.WebRequest.Create(uri);
+        //    System.Net.HttpWebRequest req = System.Net.WebRequest.Create(uri) as System.Net.HttpWebRequest;
         //    if (req == null) return null;
         //    req.Method = mathod;
-        //    req.KeepAlive = false;
-        //    req.UsePassive = false;
-        //    req.UseBinary = true;
+        //    req.AllowAutoRedirect = true;
+        //    if (username != null && password != null)
+        //    { req.Credentials = new System.Net.NetworkCredential(username, password); }
         //    return req;
         //}
 
-        //private System.Net.FtpWebResponse GetResponse(System.Net.FtpWebRequest request)
-        //{ return (System.Net.FtpWebResponse)request.GetResponse(); }
-
-        //private System.IO.Stream GetRequestStream(System.Net.FtpWebRequest request)
-        //{ return request.GetRequestStream(); }
-
-        //private System.IO.Stream GetResponseStream(System.Net.FtpWebResponse response)
-        //{ return response.GetResponseStream(); }
-
-        //private class StandaloneStreamFactoryInstance : StandaloneStreamFactory { }
-
+        //private System.Net.HttpWebResponse GetResponse(System.Net.HttpWebRequest request)
+        //{ return request.GetResponse() as System.Net.HttpWebResponse; }
 
     }
 }

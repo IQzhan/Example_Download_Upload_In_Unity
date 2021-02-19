@@ -333,7 +333,9 @@ namespace E.Data
                     testRequest = GetRequest(uri.AbsoluteUri, System.Net.WebRequestMethods.Http.Head);
                     testResponse = GetResponse(testRequest);
                     length = testResponse.ContentLength;
+                    DataProcessorDebug.Log("_iii " + length);
                     lastModified = testResponse.LastModified;
+                    DataProcessorDebug.Log("_iii0 " + lastModified);
                     return true;
                 }
                 catch (System.Net.WebException e)

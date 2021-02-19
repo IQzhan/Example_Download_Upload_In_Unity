@@ -242,6 +242,7 @@
                                 if (asyncOperation.IsClosed) return;
                                 if (!targetStream.Create()) throw new System.IO.IOException("create target faild.");
                                 targetExists = true;
+                                DataProcessorDebug.Log("___ " + targetStream.Length) ;
                             }
                             if (asyncOperation.IsClosed) return;
                             bool complete = targetExists && targetStream.Complete;
@@ -280,8 +281,11 @@
                                 asyncOperation.ProcessedBytes = currentPosition;
                                 if (currentPosition == length) { targetStream.Complete = true; return; }
                                 targetStream.Position = currentPosition;
+                                DataProcessorDebug.Log(currentPosition);
                             }
                             //get from source and add to target and load if need
+                            DataProcessorDebug.Log(currentPosition);
+
                             sourceStream.Position = currentPosition;
                             while (currentPosition < length)
                             {
