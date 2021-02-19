@@ -20,18 +20,22 @@
         {
             if(Check(data, target, out DataStream targetStream, out CloneAsyncOperationImplement asyncOperation))
             {
-                commandHandler.AddCommand(() => 
+                commandHandler?.AddCommand(() => 
                 {
                     void taskAction()
                     {
                         try
                         {
+                            if (asyncOperation.IsClosed) return;
                             asyncOperation.IsWorking = true;
                             targetStream.Timeout = asyncOperation.Timeout;
                             targetStream.SetAccount(asyncOperation.targetAccount.username, asyncOperation.targetAccount.password);
+                            if (asyncOperation.IsClosed) return;
                             bool targetAllowed = targetStream.TestConnection(asyncOperation.ForceTestConnection);
                             if (!targetAllowed) throw new System.IO.IOException("target connecting faild.");
+                            if (asyncOperation.IsClosed) return;
                             if (targetStream.Exists && !targetStream.Delete()) throw new System.IO.IOException("delete target faild.");
+                            if (asyncOperation.IsClosed) return;
                             targetStream.LastModified = System.DateTime.Now;
                             if (!targetStream.Create()) throw new System.IO.IOException("craete target faild.");
                             byte[] temp = new byte[CacheSize];
@@ -42,13 +46,16 @@
                             asyncOperation.ProcessedBytes = currentPosition;
                             while (currentPosition < length)
                             {
+                                if (asyncOperation.IsClosed) return;
                                 long remainCount = length - currentPosition;
                                 int readCount = remainCount > CacheSize ? CacheSize : (int)remainCount;
                                 readCount = data.Read(temp, 0, readCount);
+                                if (asyncOperation.IsClosed) return;
                                 targetStream.Write(temp, 0, readCount);
                                 currentPosition += readCount;
                                 asyncOperation.ProcessedBytes = currentPosition;
                             }
+                            if (asyncOperation.IsClosed) return;
                             if (currentPosition == length) { targetStream.Complete = true; return; }
                         }
                         catch (System.Exception e)
@@ -62,8 +69,7 @@
                     {
                         targetStream.Dispose();
                         targetStream = null;
-                        asyncOperation.Close();
-                        commandHandler.AddCommand(() =>
+                        commandHandler?.AddCommand(() =>
                         { asyncOperation.onClose?.Invoke(); });
                     }
                     taskHandler.AddTask(asyncOperation, taskAction, cleanTask);
@@ -90,19 +96,24 @@
         {
             if (Check(in data, in target, out DataStream targetStream, out CloneAsyncOperationImplement asyncOperation))
             {
-                commandHandler.AddCommand(() =>
+                commandHandler?.AddCommand(() =>
                 {
                     void taskAction()
                     {
                         try
                         {
+                            if (asyncOperation.IsClosed) return;
                             asyncOperation.IsWorking = true;
                             targetStream.Timeout = asyncOperation.Timeout;
                             targetStream.SetAccount(asyncOperation.targetAccount.username, asyncOperation.targetAccount.password);
+                            if (asyncOperation.IsClosed) return;
                             bool targetAllowed = targetStream.TestConnection(asyncOperation.ForceTestConnection);
                             if (!targetAllowed) throw new System.IO.IOException("target connecting faild.");
+                            if (asyncOperation.IsClosed) return;
                             if (targetStream.Exists && !targetStream.Delete()) throw new System.IO.IOException("delete target faild.");
+                            if (asyncOperation.IsClosed) return;
                             targetStream.LastModified = System.DateTime.Now;
+                            if (asyncOperation.IsClosed) return;
                             if (!targetStream.Create()) throw new System.IO.IOException("craete target faild.");
                             byte[] temp = new byte[CacheSize];
                             long currentPosition = 0;
@@ -111,6 +122,7 @@
                             asyncOperation.ProcessedBytes = currentPosition;
                             while (currentPosition < length)
                             {
+                                if (asyncOperation.IsClosed) return;
                                 long remainCount = length - currentPosition;
                                 int readCount = remainCount > CacheSize ? CacheSize : (int)remainCount;
                                 for (int i = 0; i < readCount; i++)
@@ -119,6 +131,7 @@
                                 currentPosition += readCount;
                                 asyncOperation.ProcessedBytes = currentPosition;
                             }
+                            if (asyncOperation.IsClosed) return;
                             if (currentPosition == length) { targetStream.Complete = true; return; }
                         }
                         catch (System.Exception e)
@@ -132,8 +145,7 @@
                     {
                         targetStream.Dispose();
                         targetStream = null;
-                        asyncOperation.Close();
-                        commandHandler.AddCommand(() =>
+                        commandHandler?.AddCommand(() =>
                         { asyncOperation.onClose?.Invoke(); });
                     }
                     taskHandler.AddTask(asyncOperation, taskAction, cleanTask);
@@ -188,13 +200,14 @@
                 out DataStream sourceStream,
                 out DataStream targetStream,
                 out CloneAsyncOperationImplement asyncOperation))
-                commandHandler.AddCommand(() =>
+                commandHandler?.AddCommand(() =>
                 {
                     void taskAction()
                     {
                         byte[] data = null;
                         try
                         {
+                            if (asyncOperation.IsClosed) return;
                             asyncOperation.IsWorking = true;
                             if (sourceStream != null) 
                             {
@@ -210,22 +223,27 @@
                             bool targetAllowed = targetStream != null && targetStream.TestConnection(asyncOperation.ForceTestConnection);
                             bool sourceExists = sourceAllowed && sourceStream.Exists;
                             bool targetExists = targetAllowed && targetStream.Exists;
-                            if(!sourceExists && !targetExists)
+                            if (asyncOperation.IsClosed) return;
+                            if (!sourceExists && !targetExists)
                             { throw new System.IO.IOException("source and target are both not exists."); }
                             string sourceVersion = sourceExists ? sourceStream.Version : null;
                             string targetVersion = targetExists ? targetStream.Version : null;
                             bool versionChanged = sourceExists && ((sourceVersion == null) || (sourceVersion != targetVersion));
                             if (targetExists && versionChanged)
-                            { 
-                                if (!targetStream.Delete()) throw new System.IO.IOException("delete target faild."); 
+                            {
+                                if (asyncOperation.IsClosed) return;
+                                if (!targetStream.Delete()) throw new System.IO.IOException("delete target faild.");
                                 targetExists = false; 
                             }
                             if (targetAllowed && sourceExists && targetStream != null && !targetExists)
                             {
+                                if (asyncOperation.IsClosed) return;
                                 targetStream.LastModified = sourceStream.LastModified;
+                                if (asyncOperation.IsClosed) return;
                                 if (!targetStream.Create()) throw new System.IO.IOException("create target faild.");
                                 targetExists = true;
                             }
+                            if (asyncOperation.IsClosed) return;
                             bool complete = targetExists && targetStream.Complete;
                             //init length
                             long length = -1;
@@ -244,6 +262,7 @@
                                 long targetLength = targetStream.Length;
                                 while (currentPosition < targetLength)
                                 {
+                                    if (asyncOperation.IsClosed) return;
                                     int readCount = targetStream.Read(temp, 0, CacheSize);
                                     for (int i = 0; i < readCount; i++)
                                     {
@@ -256,15 +275,19 @@
                             //set currentPosition to target length if exists
                             if (targetExists)
                             {
+                                if (asyncOperation.IsClosed) return;
                                 currentPosition = targetStream.Length;
                                 asyncOperation.ProcessedBytes = currentPosition;
                                 if (currentPosition == length) { targetStream.Complete = true; return; }
+                                targetStream.Position = currentPosition;
                             }
                             //get from source and add to target and load if need
                             sourceStream.Position = currentPosition;
                             while (currentPosition < length)
                             {
+                                if (asyncOperation.IsClosed) return;
                                 int readCount = sourceStream.Read(temp, 0, CacheSize);
+                                if (asyncOperation.IsClosed) return;
                                 targetStream.Write(temp, 0, readCount);
                                 if (asyncOperation.LoadData)
                                 {
@@ -274,6 +297,7 @@
                                 currentPosition += readCount;
                                 asyncOperation.ProcessedBytes = currentPosition;
                             }
+                            if (asyncOperation.IsClosed) return;
                             if (currentPosition == length) { targetStream.Complete = true; return; }
                         }
                         catch (System.Exception e)
@@ -294,8 +318,7 @@
                         targetStream?.Dispose();
                         sourceStream = null;
                         targetStream = null;
-                        asyncOperation.Close();
-                        commandHandler.AddCommand(() =>
+                        commandHandler?.AddCommand(() =>
                         { asyncOperation.onClose?.Invoke(); });
                     }
                     taskHandler.AddTask(asyncOperation, taskAction, cleanTask);

@@ -58,6 +58,7 @@ namespace E.Data
                 LinkedListNode<ITask> next = node.Next;
                 if (node.Value.IsEnded())
                 {
+                    node.Value.asyncOperation.Close();
                     node.Value.RunClear();
                     taskList.Remove(node);
                 }
@@ -82,6 +83,7 @@ namespace E.Data
             while (node != null)
             {
                 LinkedListNode<ITask> next = node.Next;
+                node.Value.asyncOperation.Close();
                 node.Value.RunClear();
                 taskList.Remove(node);
                 node = next;
@@ -92,7 +94,10 @@ namespace E.Data
         private void ClearQueue()
         {
             while (!actionQueue.IsEmpty && actionQueue.TryDequeue(out ITask task))
-            { task.RunClear(); }
+            { 
+                task.asyncOperation.Close();
+                task.RunClear();
+            }
             actionQueue = null;
         }
 

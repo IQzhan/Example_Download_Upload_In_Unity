@@ -1,5 +1,4 @@
-﻿using System.Threading;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 
 namespace E.Data
 {
@@ -11,41 +10,30 @@ namespace E.Data
         {
             public override bool IsEnded()
             {
-                return asyncOperation.IsClosed || (task != null && (task.IsCompleted || task.IsCanceled || task.IsFaulted));
+                return task != null && (task.IsCompleted || task.IsCanceled || task.IsFaulted);
             }
 
             private Task task;
-            
-            private CancellationTokenSource cancelSource;
-            
+
             public override void RunTask()
             {
-                cancelSource = new CancellationTokenSource();
                 task = Task.Run(() =>
                 {
                     try
                     { bodyAction(); }
                     catch (System.Exception e)
                     { DataProcessorDebug.LogException(e); }
-                }, cancelSource.Token);
+                    finally
+                    {
+                        try
+                        { cleanAction(); }
+                        catch (System.Exception e)
+                        { DataProcessorDebug.LogException(e); }
+                    }
+                });
             }
 
-            public override void RunClear()
-            {
-                try
-                {
-                    
-                    cancelSource?.Cancel();
-                    task?.Dispose();
-                    
-                    cancelSource?.Dispose();
-                    task = null;
-                    cancelSource = null;
-                    cleanAction();
-                }
-                catch(System.Exception e)
-                { DataProcessorDebug.LogException(e); }
-            }
+            public override void RunClear() { }
         }
 
         protected override ITask GetTaskInstance()

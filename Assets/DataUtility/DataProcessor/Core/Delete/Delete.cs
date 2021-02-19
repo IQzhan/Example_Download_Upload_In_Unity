@@ -20,20 +20,23 @@
         {
             if (Check(in target, out DataStream targetStream, out DeleteAsyncOperationImplement asyncOperation))
             {
-                commandHandler.AddCommand(() =>
+                commandHandler?.AddCommand(() =>
                 {
                     void taskAction()
                     {
                         try
                         {
+                            if (asyncOperation.IsClosed) return;
                             asyncOperation.IsWorking = true;
                             targetStream.Timeout = asyncOperation.Timeout;
                             targetStream.SetAccount(asyncOperation.targetAccount.username, asyncOperation.targetAccount.password);
+                            if (asyncOperation.IsClosed) return;
                             if (targetStream.TestConnection(asyncOperation.ForceTestConnection))
                             { asyncOperation.Progress = 0.1f; }
                             else throw new System.Exception(@"connecting faild.");
                             if (targetStream.Exists)
                             {
+                                if (asyncOperation.IsClosed) return;
                                 if (targetStream.Delete())
                                 { asyncOperation.Progress = 1; }
                                 else { throw new System.Exception(@"delete faild."); }
@@ -50,8 +53,7 @@
                     {
                         targetStream?.Dispose();
                         targetStream = null;
-                        asyncOperation?.Close();
-                        commandHandler.AddCommand(() =>
+                        commandHandler?.AddCommand(() =>
                         { asyncOperation.onClose?.Invoke(); });
                     }
                     taskHandler.AddTask(asyncOperation, taskAction, cleanTask);
