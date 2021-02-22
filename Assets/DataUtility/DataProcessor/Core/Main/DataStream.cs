@@ -1,4 +1,7 @@
-﻿namespace E.Data
+﻿using System;
+using System.Collections.Generic;
+
+namespace E.Data
 {
     public abstract class DataStream : System.IDisposable
     {
@@ -88,6 +91,21 @@
         /// <param name="count"></param>
         /// <returns></returns>
         public abstract int Read(byte[] buffer, int offset, int count);
+
+        /// <summary>
+        /// list children info of this folder
+        /// </summary>
+        /// <param name="topOnly"></param>
+        /// <returns></returns>
+        public abstract SortedList<string, ResourceInfo> ListDirectory(bool topOnly);
+
+        public struct ResourceInfo
+        {
+            public string uri;
+            public string name;
+            public bool isFolder;
+            public DateTime lastModified;
+        }
 
         protected abstract void ReleaseManaged();
 

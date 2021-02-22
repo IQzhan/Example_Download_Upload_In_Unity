@@ -1,7 +1,12 @@
 ﻿using E.Data;
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Net;
 using System.Text;
+using System.Xml;
 using UnityEngine;
 
 namespace E
@@ -153,7 +158,75 @@ namespace E
             //        { Debug.LogError(cloneAsyncOperation.Data.Length); }
             //    }
             //};
+            SortedList<string, DataStream.ResourceInfo> srl = GetDirectoryContents("http://localhost:4322/", true);
+            //foreach(KeyValuePair<string, Resource> kvp in srl)
+            //{ Debug.LogError(kvp.Value); }
 
+        }
+
+        private const string requestString =
+            "<?xml version=\"1.0\" encoding=\"utf-8\" ?>" +
+            "<a:propfind xmlns:a=\"DAV:\">" +
+            "<a:prop>" +
+            "<a:displayname/>" +
+            "<a:iscollection/>" +
+            "<a:getlastmodified/>" +
+            "</a:prop>" +
+            "</a:propfind>";
+        private static byte[] requestBytes = Encoding.ASCII.GetBytes(requestString);
+
+        private const string PROPFIND = "PROPFIND";
+
+        public static SortedList<string, DataStream.ResourceInfo> GetDirectoryContents(string url, bool deep)
+        {
+            HttpWebRequest webRequest = null;
+            HttpWebResponse webResponse = null;
+            try
+            {
+                webRequest = (HttpWebRequest)WebRequest.Create(url);
+                webRequest.Credentials = CredentialCache.DefaultCredentials;
+                webRequest.Method = PROPFIND;
+                webRequest.Headers.Add("Translate: f");
+                if (deep == true) { webRequest.Headers.Add("Depth: infinity"); }
+                else { webRequest.Headers.Add("Depth: 1"); }
+                webRequest.ContentLength = requestString.Length;
+                webRequest.ContentType = "text/xml";
+                Stream requestStream = webRequest.GetRequestStream();
+                requestStream.Write(requestBytes, 0, requestBytes.Length);
+                requestStream.Dispose();
+                webResponse = (HttpWebResponse)webRequest.GetResponse();
+                StreamReader streamReader = new StreamReader(webResponse.GetResponseStream(), Encoding.UTF8);
+                string responseString = streamReader.ReadToEnd();
+                streamReader.Dispose();
+                XmlDocument XmlDoc = new XmlDocument();
+                XmlDoc.LoadXml(responseString);
+                XmlNamespaceManager nsmgr = new XmlNamespaceManager(XmlDoc.NameTable);
+                nsmgr.AddNamespace("a", "DAV:");
+                XmlNodeList NameList = XmlDoc.SelectNodes("//a:prop/a:displayname", nsmgr);
+                XmlNodeList isFolderList = XmlDoc.SelectNodes("//a:prop/a:iscollection", nsmgr);
+                XmlNodeList LastModList = XmlDoc.SelectNodes("//a:prop/a:getlastmodified", nsmgr);
+                XmlNodeList HrefList = XmlDoc.SelectNodes("//a:href", nsmgr);
+                SortedList<string, DataStream.ResourceInfo> resourceList = new SortedList<string, DataStream.ResourceInfo>();
+                for (int i = 0; i < NameList.Count; i++)
+                {
+                    string theUri = HrefList[i].InnerText;
+                    resourceList.Add(theUri, new DataStream.ResourceInfo
+                    {
+                        uri = theUri,
+                        name = NameList[i].InnerText,
+                        isFolder = Convert.ToBoolean(Convert.ToInt32(isFolderList[i].InnerText)),
+                        lastModified = Convert.ToDateTime(LastModList[i].InnerText)
+                    });
+                }
+                return resourceList;
+            }
+            catch (WebException e)
+            { Debug.LogException(e); return null; }
+            finally
+            {
+                webResponse?.Dispose();
+                webRequest?.Abort();
+            }
         }
 
     }

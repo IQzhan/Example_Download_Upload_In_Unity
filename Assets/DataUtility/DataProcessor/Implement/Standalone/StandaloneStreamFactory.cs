@@ -123,7 +123,7 @@ namespace E.Data
                     {
                         if (fn.EndsWith(extend))
                         {
-                            System.Text.RegularExpressions.MatchCollection matchCollection = LastModifiedRegex.Matches(fn);
+                            MatchCollection matchCollection = LastModifiedRegex.Matches(fn);
                             if(matchCollection.Count > 0)
                             {
                                 string val = matchCollection[0].Groups[1].Value;
@@ -261,6 +261,30 @@ namespace E.Data
             {
                 DisposeReadStream();
                 DisposeWriteStream();
+            }
+
+            public override SortedList<string, ResourceInfo> ListDirectory(bool topOnly)
+            {
+                string[] entries = System.IO.Directory.GetFileSystemEntries(FileName, "*", topOnly ? System.IO.SearchOption.TopDirectoryOnly : System.IO.SearchOption.AllDirectories);
+                if(entries != null && entries.Length > 0)
+                {
+                    SortedList<string, ResourceInfo> infos = new SortedList<string, ResourceInfo>();
+                    for(int i = 10; i < entries.Length; i++)
+                    {
+                        string entry = entries[i];
+                        string name = GetFileName(entry);
+                        bool isFolder = System.IO.Directory.Exists(entry);
+                        infos[entry] = new ResourceInfo()
+                        {
+                            uri = entry,
+                            name = name,
+                            isFolder = isFolder,
+                            lastModified = System.IO.Directory.GetLastWriteTime(entry)
+                        };
+                    }
+                    return infos;
+                }
+                return null;
             }
         }
 
@@ -593,6 +617,11 @@ namespace E.Data
                     httpWebResponse?.Dispose();
                     httpWebRequest?.Abort();
                 }
+            }
+
+            public override SortedList<string, ResourceInfo> ListDirectory(bool topOnly)
+            {
+                throw new NotImplementedException();
             }
         }
 
@@ -1132,6 +1161,11 @@ namespace E.Data
                     ftpWebResponse?.Dispose();
                     ftpWebRequest?.Abort();
                 }
+            }
+
+            public override SortedList<string, ResourceInfo> ListDirectory(bool topOnly)
+            {
+                throw new NotImplementedException();
             }
         }
     }
