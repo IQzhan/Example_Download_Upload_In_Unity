@@ -290,13 +290,13 @@ namespace E.Data
             private static readonly Regex HostUriRegex = new Regex(@"http[s]{0,1}://[^/\\]+");
 
             public override bool TestConnection(bool force)
-            { return TestHostConnection(HostUriRegex.Match(uri.AbsoluteUri).Value); }
+            { return TestHostConnection(HostUriRegex.Match(uri.AbsoluteUri).Value, force); }
 
-            private bool TestHostConnection(string hostUri)
+            private bool TestHostConnection(string hostUri, bool force)
             {
                 lock (string.Intern(hostUri))
                 {
-                    if (factory.testedHostConnection.TryGetValue(hostUri, out bool val)) { return val; }
+                    if (!force && factory.testedHostConnection.TryGetValue(hostUri, out bool val)) { return val; }
                     else { return factory.testedHostConnection[hostUri] = ForceTestConnection(hostUri); }
                 }
             }
@@ -622,13 +622,13 @@ namespace E.Data
             private static readonly Regex HostUriRegex = new Regex(@"ftp://[^/\\]+");
 
             public override bool TestConnection(bool force)
-            { return TestHostConnection(HostUriRegex.Match(uri.AbsoluteUri).Value); }
+            { return TestHostConnection(HostUriRegex.Match(uri.AbsoluteUri).Value, force); }
 
-            private bool TestHostConnection(string hostUri)
+            private bool TestHostConnection(string hostUri, bool force)
             {
                 lock (string.Intern(hostUri))
                 {
-                    if(factory.testedHostConnection.TryGetValue(hostUri, out bool val)) { return val; }
+                    if(!force && factory.testedHostConnection.TryGetValue(hostUri, out bool val)) { return val; }
                     else { return factory.testedHostConnection[hostUri] = ForceTestConnection(hostUri); }
                 }
             }
