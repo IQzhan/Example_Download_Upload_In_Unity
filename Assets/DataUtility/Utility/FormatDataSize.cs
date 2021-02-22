@@ -71,11 +71,11 @@
             int mark = 0;
             for (int i = 0; i < lengths.Length; i++)
             { if (length > lengths[i]) { mark = i; } else break; }
-            if (pattern == null) pattern = "<n> <u>";
+            if (pattern == null) pattern = string.Intern("<n> <u>");
             return pattern
-            .Replace("<n>", ((double)length / lengths[mark]).ToString())
-            .Replace("<U>", units[mark])
-            .Replace("<u>", units[mark].ToLower());
+            .Replace(string.Intern("<n>"), ((double)length / lengths[mark]).ToString())
+            .Replace(string.Intern("<U>"), units[mark])
+            .Replace(string.Intern("<u>"), units[mark].ToLower());
         }
 
         /// <summary>
@@ -103,11 +103,11 @@
             int mark = 0;
             for (int i = 0; i < lengths.Length; i++)
             { if (length > lengths[i]) { mark = i; } else break; }
-            if (pattern == null) pattern = "<n> <u>";
+            if (pattern == null) pattern = string.Intern("<n> <u>");
             return pattern
-            .Replace("<n>", (length / lengths[mark]).ToString())
-            .Replace("<U>", units[mark])
-            .Replace("<u>", units[mark].ToLower());
+            .Replace(string.Intern("<n>"), (length / lengths[mark]).ToString())
+            .Replace(string.Intern("<U>"), units[mark])
+            .Replace(string.Intern("<u>"), units[mark].ToLower());
         }
     }
 }

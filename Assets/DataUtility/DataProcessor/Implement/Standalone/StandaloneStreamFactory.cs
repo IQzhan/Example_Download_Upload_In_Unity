@@ -333,9 +333,7 @@ namespace E.Data
                     testRequest = GetRequest(uri.AbsoluteUri, System.Net.WebRequestMethods.Http.Head);
                     testResponse = GetResponse(testRequest);
                     length = testResponse.ContentLength;
-                    DataProcessorDebug.Log("_iii " + length);
                     lastModified = testResponse.LastModified;
-                    DataProcessorDebug.Log("_iii0 " + lastModified);
                     return true;
                 }
                 catch (System.Net.WebException e)
@@ -398,7 +396,7 @@ namespace E.Data
             }
 
             public override bool Create()
-            { return CreateFile(uri.AbsoluteUri); }
+            { return CreateFile(uri.AbsoluteUri) && Refresh(); }
 
             public override int Read(byte[] buffer, int offset, int count)
             {

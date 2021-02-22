@@ -242,7 +242,6 @@
                                 if (asyncOperation.IsClosed) return;
                                 if (!targetStream.Create()) throw new System.IO.IOException("create target faild.");
                                 targetExists = true;
-                                DataProcessorDebug.Log("___ " + targetStream.Length) ;
                             }
                             if (asyncOperation.IsClosed) return;
                             bool complete = targetExists && targetStream.Complete;
@@ -252,7 +251,6 @@
                             else if (sourceExists) length = sourceStream.Length;
                             if (length < 0) throw new System.IO.IOException("cause an error while try to get length of data.");
                             asyncOperation.Size = length;
-                            //DataProcessorDebug.LogError(length.ToString());
                             if (asyncOperation.LoadData) { data = new byte[length]; }
                             long currentPosition = 0;
                             byte[] temp = new byte[CacheSize];
@@ -266,9 +264,7 @@
                                     if (asyncOperation.IsClosed) return;
                                     int readCount = targetStream.Read(temp, 0, CacheSize);
                                     for (int i = 0; i < readCount; i++)
-                                    {
-                                        data[currentPosition + i] = temp[i];
-                                    }
+                                    { data[currentPosition + i] = temp[i]; }
                                     currentPosition += readCount;
                                     asyncOperation.ProcessedBytes = currentPosition;
                                 }
@@ -281,18 +277,15 @@
                                 asyncOperation.ProcessedBytes = currentPosition;
                                 if (currentPosition == length) { targetStream.Complete = true; return; }
                                 targetStream.Position = currentPosition;
-                                DataProcessorDebug.Log(currentPosition);
                             }
                             //get from source and add to target and load if need
-                            DataProcessorDebug.Log(currentPosition);
-
                             sourceStream.Position = currentPosition;
                             while (currentPosition < length)
                             {
                                 if (asyncOperation.IsClosed) return;
                                 int readCount = sourceStream.Read(temp, 0, CacheSize);
                                 if (asyncOperation.IsClosed) return;
-                                targetStream.Write(temp, 0, readCount);
+                                if (targetExists) { targetStream.Write(temp, 0, readCount); }
                                 if (asyncOperation.LoadData)
                                 {
                                     for (int i = 0; i < readCount; i++)
@@ -302,7 +295,7 @@
                                 asyncOperation.ProcessedBytes = currentPosition;
                             }
                             if (asyncOperation.IsClosed) return;
-                            if (currentPosition == length) { targetStream.Complete = true; return; }
+                            if (currentPosition == length && targetExists) { targetStream.Complete = true; return; }
                         }
                         catch (System.Exception e)
                         {

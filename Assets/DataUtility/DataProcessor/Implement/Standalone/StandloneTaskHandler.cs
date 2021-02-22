@@ -9,9 +9,7 @@ namespace E.Data
         private class DataTask : ITask
         {
             public override bool IsEnded()
-            {
-                return task != null && (task.IsCompleted || task.IsCanceled || task.IsFaulted);
-            }
+            { return task != null && (task.IsCompleted || task.IsCanceled || task.IsFaulted); }
 
             private Task task;
 
@@ -19,14 +17,12 @@ namespace E.Data
             {
                 task = Task.Run(() =>
                 {
-                    try
-                    { bodyAction(); }
+                    try { bodyAction(); }
                     catch (System.Exception e)
                     { DataProcessorDebug.LogException(e); }
                     finally
                     {
-                        try
-                        { cleanAction(); }
+                        try { cleanAction(); }
                         catch (System.Exception e)
                         { DataProcessorDebug.LogException(e); }
                     }
