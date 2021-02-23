@@ -48,7 +48,7 @@ namespace E.Data
 
             private const string extend = @".downloading";
 
-            private const string splash = "/";
+            private const string slash = "/";
 
             public override void SetAccount(string username, string password) { }
 
@@ -75,7 +75,7 @@ namespace E.Data
                 else
                 {
                     string name = GetFileName(localPath);
-                    string dir = GetDirectoryName(localPath) + splash;
+                    string dir = GetDirectoryName(localPath) + slash;
                     if (!System.IO.Directory.Exists(dir)) return false;
                     string[] fileNames = System.IO.Directory.GetFiles
                         (dir, name + ".*.downloading", System.IO.SearchOption.TopDirectoryOnly);

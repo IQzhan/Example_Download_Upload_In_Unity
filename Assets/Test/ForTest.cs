@@ -160,19 +160,31 @@ namespace E
             //    }
             //};
 
-            SortedList<string, DataStream.FileSystemEntry> dirs = ListDirectory("ftp://localhost/Downloads");
-            foreach (KeyValuePair<string, DataStream.FileSystemEntry> kv in dirs)
-            { Debug.LogError(kv.Value); }
+            //SortedList<string, DataStream.FileSystemEntry> dirs = ListDirectory("ftp://localhost/Downloads");
+            //foreach (KeyValuePair<string, DataStream.FileSystemEntry> kv in dirs)
+            //{ Debug.LogError(kv.Value); }
+
+            //TODO test delete
+
+            //TODO test Directory
+
+            //TODO group
+
+            //TODO encode and decode
+
+            //TODO android
+
+            
 
         }
 
-        private static readonly Regex fileNameRegex = new Regex(@"(?:[/\\]+([^/\\]+)[/\\]*)$");
+        //private static readonly Regex fileNameRegex = new Regex(@"(?:[/\\]+([^/\\]+)[/\\]*)$");
 
-        private static string GetDirectoryName(string filePath)
-        { return fileNameRegex.Replace(filePath, string.Empty); }
+        //private static string GetDirectoryName(string filePath)
+        //{ return fileNameRegex.Replace(filePath, string.Empty); }
 
-        private static string GetFileName(string filePath)
-        { return fileNameRegex.Match(filePath).Groups[1].Value; }
+        //private static string GetFileName(string filePath)
+        //{ return fileNameRegex.Match(filePath).Groups[1].Value; }
 
         //public SortedList<string, DataStream.FileSystemEntry> GetFileSystemEntries(string fileName, bool topOnly = false)
         //{
@@ -198,88 +210,88 @@ namespace E
         //    return null;
         //}
 
-        public SortedList<string, DataStream.FileSystemEntry> ListDirectory(string uri, bool topOnly = false)
-        {
-            SortedList<string, DataStream.FileSystemEntry> result = null;
-            ListDirectory0(ref result, uri, topOnly);
-            return result;
-        }
+        //public SortedList<string, DataStream.FileSystemEntry> ListDirectory(string uri, bool topOnly = false)
+        //{
+        //    SortedList<string, DataStream.FileSystemEntry> result = null;
+        //    ListDirectory0(ref result, uri, topOnly);
+        //    return result;
+        //}
 
-        private const string slash = "/";
+        //private const string slash = "/";
 
-        private readonly Regex MSDOSRegex = new Regex(@"([0-9]+-[0-9]+-[0-9]+\s+[0-9]+:[0-9]+[AP]M)\s+(\S+)\s+(.+)");
+        //private readonly Regex MSDOSRegex = new Regex(@"([0-9]+-[0-9]+-[0-9]+\s+[0-9]+:[0-9]+[AP]M)\s+(\S+)\s+(.+)");
 
-        private const string DIRMark = "<DIR>";
+        //private const string DIRMark = "<DIR>";
 
-        private void ListDirectory0(ref SortedList<string, DataStream.FileSystemEntry> result, string uri, bool topOnly)
-        {
-            System.IO.StreamReader streamReader = null;
-            System.Net.FtpWebResponse ftpWebResponse = null;
-            System.Net.FtpWebRequest ftpWebRequest = null;
-            try
-            {
-                if (!uri.EndsWith(slash)) uri += slash;
-                ftpWebRequest = GetRequest(uri, System.Net.WebRequestMethods.Ftp.ListDirectoryDetails);
-                ftpWebResponse = GetResponse(ftpWebRequest);
-                System.IO.Stream responseStream = ftpWebResponse.GetResponseStream();
-                streamReader = new System.IO.StreamReader(responseStream, true);
-                string line = null;
-                if (result == null) result = new SortedList<string, DataStream.FileSystemEntry>();
-                while ((line = streamReader.ReadLine()) != null)
-                {
-                    MatchCollection matchCollection = MSDOSRegex.Matches(line);
-                    if (matchCollection.Count > 0)
-                    {
-                        GroupCollection groupCollection = matchCollection[0].Groups;
-                        if (groupCollection.Count == 4)
-                        {
-                            string mLastModified = groupCollection[1].Value;
-                            string mMark = groupCollection[2].Value;
-                            string mName = groupCollection[3].Value;
-                            string mUri = uri + mName;
-                            bool isFolder = false;
-                            if (mMark.Equals(DIRMark)) { isFolder = true; }
-                            result[mUri] = new DataStream.FileSystemEntry()
-                            {
-                                uri = mUri,
-                                name = mName,
-                                lastModified = Convert.ToDateTime(mLastModified),
-                                isFolder = isFolder
-                            };
-                            if (isFolder && !topOnly) { ListDirectory0(ref result, mUri, topOnly); }
-                        }
-                    }
-                    else { throw new System.Exception("ftp LIST only support MS-DOS(M) style."); }
-                }
-                return;
-            }
-            catch { throw; }
-            finally
-            {
-                streamReader?.Dispose();
-                ftpWebResponse?.Dispose();
-                ftpWebRequest?.Abort();
-            }
-        }
+        //private void ListDirectory0(ref SortedList<string, DataStream.FileSystemEntry> result, string uri, bool topOnly)
+        //{
+        //    System.IO.StreamReader streamReader = null;
+        //    System.Net.FtpWebResponse ftpWebResponse = null;
+        //    System.Net.FtpWebRequest ftpWebRequest = null;
+        //    try
+        //    {
+        //        if (!uri.EndsWith(slash)) uri += slash;
+        //        ftpWebRequest = GetRequest(uri, System.Net.WebRequestMethods.Ftp.ListDirectoryDetails);
+        //        ftpWebResponse = GetResponse(ftpWebRequest);
+        //        System.IO.Stream responseStream = ftpWebResponse.GetResponseStream();
+        //        streamReader = new System.IO.StreamReader(responseStream, true);
+        //        string line = null;
+        //        if (result == null) result = new SortedList<string, DataStream.FileSystemEntry>();
+        //        while ((line = streamReader.ReadLine()) != null)
+        //        {
+        //            MatchCollection matchCollection = MSDOSRegex.Matches(line);
+        //            if (matchCollection.Count > 0)
+        //            {
+        //                GroupCollection groupCollection = matchCollection[0].Groups;
+        //                if (groupCollection.Count == 4)
+        //                {
+        //                    string mLastModified = groupCollection[1].Value;
+        //                    string mMark = groupCollection[2].Value;
+        //                    string mName = groupCollection[3].Value;
+        //                    string mUri = uri + mName;
+        //                    bool isFolder = false;
+        //                    if (mMark.Equals(DIRMark)) { isFolder = true; }
+        //                    result[mUri] = new DataStream.FileSystemEntry()
+        //                    {
+        //                        uri = mUri,
+        //                        name = mName,
+        //                        lastModified = Convert.ToDateTime(mLastModified),
+        //                        isFolder = isFolder
+        //                    };
+        //                    if (isFolder && !topOnly) { ListDirectory0(ref result, mUri, topOnly); }
+        //                }
+        //            }
+        //            else { throw new System.Exception("ftp LIST only support MS-DOS(M) style."); }
+        //        }
+        //        return;
+        //    }
+        //    catch { throw; }
+        //    finally
+        //    {
+        //        streamReader?.Dispose();
+        //        ftpWebResponse?.Dispose();
+        //        ftpWebRequest?.Abort();
+        //    }
+        //}
 
-        private string username;
+        //private string username;
 
-        private string password;
+        //private string password;
 
-        private System.Net.FtpWebRequest GetRequest(string uri, string mathod)
-        {
-            System.Net.FtpWebRequest req = System.Net.WebRequest.Create(uri) as System.Net.FtpWebRequest;
-            if (req == null) return null;
-            req.Method = mathod;
-            if (username != null && password != null)
-            { req.Credentials = new System.Net.NetworkCredential(username, password); }
-            req.KeepAlive = false;
-            req.UsePassive = false;
-            req.UseBinary = true;
-            return req;
-        }
+        //private System.Net.FtpWebRequest GetRequest(string uri, string mathod)
+        //{
+        //    System.Net.FtpWebRequest req = System.Net.WebRequest.Create(uri) as System.Net.FtpWebRequest;
+        //    if (req == null) return null;
+        //    req.Method = mathod;
+        //    if (username != null && password != null)
+        //    { req.Credentials = new System.Net.NetworkCredential(username, password); }
+        //    req.KeepAlive = false;
+        //    req.UsePassive = false;
+        //    req.UseBinary = true;
+        //    return req;
+        //}
 
-        private System.Net.FtpWebResponse GetResponse(System.Net.FtpWebRequest request)
-        { return request.GetResponse() as System.Net.FtpWebResponse; }
+        //private System.Net.FtpWebResponse GetResponse(System.Net.FtpWebRequest request)
+        //{ return request.GetResponse() as System.Net.FtpWebResponse; }
     }
 }
