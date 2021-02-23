@@ -91,20 +91,23 @@ namespace E.Data
         public abstract int Read(byte[] buffer, int offset, int count);
 
         /// <summary>
-        /// list children info of this folder
+        /// Get files and folders info of this directory
         /// </summary>
         /// <param name="topOnly"></param>
         /// <returns></returns>
-        public abstract SortedList<string, ResourceInfo> ListDirectory(bool topOnly);
+        public abstract SortedList<string, FileSystemEntry> GetFileSystemEntries(bool topOnly);
 
-        public struct ResourceInfo
+        /// <summary>
+        /// file or folder
+        /// </summary>
+        public struct FileSystemEntry
         {
             public string uri;
             public string name;
             public bool isFolder;
             public DateTime lastModified;
             public override string ToString()
-            { return uri + ", name: " + name + (isFolder ? ", type: folder" : ", type: file") + ", last modified: " + lastModified; }
+            { return "uri: " + uri + ", name: " + name + (isFolder ? ", type: folder" : ", type: file") + ", lastModified: " + lastModified; }
         }
 
         protected abstract void ReleaseManaged();
@@ -127,10 +130,7 @@ namespace E.Data
             }
         }
 
-        ~DataStream()
-        {
-            Dispose(disposing: false);
-        }
+        ~DataStream() { Dispose(disposing: false); }
 
         public void Dispose()
         {

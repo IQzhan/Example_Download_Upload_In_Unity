@@ -29,9 +29,9 @@ namespace E.Data
 
             public new bool IsError { get { return base.IsError; } set { base.IsError = value; } }
 
-            public new SortedList<string, DataStream.ResourceInfo> Resources { get { return base.Resources; } set { base.Resources = value; } }
-
             public new double Progress { get { return base.progress; } set { base.progress = value; } }
+
+            public new SortedList<string, DataStream.FileSystemEntry> Entries { get { return base.Entries; } set { base.Entries = value; } }
         }
     }
 }

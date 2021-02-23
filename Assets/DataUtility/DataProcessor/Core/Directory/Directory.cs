@@ -2,12 +2,12 @@ namespace E.Data
 {
     public partial class DataProcessor
     {
-        public DirectoryAsyncOperation ListDirectory(string target, bool topOnly = false)
+        public DirectoryAsyncOperation GetFileSystemEntries(string target, bool topOnly = false)
         {
             try
             {
                 System.Uri targetUri = new System.Uri(target);
-                return ListDirectory(targetUri, topOnly);
+                return GetFileSystemEntries(targetUri, topOnly);
             }
             catch(System.Exception e)
             {
@@ -16,7 +16,7 @@ namespace E.Data
             }
         }
 
-        public DirectoryAsyncOperation ListDirectory(System.Uri target, bool topOnly = false)
+        public DirectoryAsyncOperation GetFileSystemEntries(System.Uri target, bool topOnly = false)
         {
             if(Check(target, out DataStream targetStream, out DirectoryAsyncOperationImplement asyncOperation))
             { commandHandler?.AddCommand(() => { taskHandler?.AddTask(asyncOperation, taskAction, cleanAction); }); }
@@ -36,9 +36,9 @@ namespace E.Data
                     bool targetExists = targetStream.Exists;
                     if (targetExists)
                     { 
-                        asyncOperation.Resources = targetStream.ListDirectory(topOnly);
-                        if(asyncOperation.Resources == null)
-                        { throw new System.Exception("ListDirectory faild."); }
+                        asyncOperation.Entries = targetStream.GetFileSystemEntries(topOnly);
+                        if(asyncOperation.Entries == null)
+                        { throw new System.Exception("GetFileSystemEntries faild."); }
                         asyncOperation.Progress = 1;
                     }
                     else

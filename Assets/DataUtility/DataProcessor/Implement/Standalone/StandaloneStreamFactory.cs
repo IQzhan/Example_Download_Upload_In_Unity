@@ -263,18 +263,18 @@ namespace E.Data
                 DisposeWriteStream();
             }
 
-            public override SortedList<string, ResourceInfo> ListDirectory(bool topOnly)
+            public override SortedList<string, FileSystemEntry> GetFileSystemEntries(bool topOnly)
             {
                 string[] entries = System.IO.Directory.GetFileSystemEntries(FileName, "*", topOnly ? System.IO.SearchOption.TopDirectoryOnly : System.IO.SearchOption.AllDirectories);
                 if(entries != null && entries.Length > 0)
                 {
-                    SortedList<string, ResourceInfo> infos = new SortedList<string, ResourceInfo>();
+                    SortedList<string, FileSystemEntry> infos = new SortedList<string, FileSystemEntry>();
                     for(int i = 0; i < entries.Length; i++)
                     {
                         string entry = entries[i];
                         string name = GetFileName(entry);
                         bool isFolder = System.IO.Directory.Exists(entry);
-                        infos[entry] = new ResourceInfo()
+                        infos[entry] = new FileSystemEntry()
                         {
                             uri = entry,
                             name = name,
@@ -619,7 +619,7 @@ namespace E.Data
                 }
             }
 
-            public override SortedList<string, ResourceInfo> ListDirectory(bool topOnly)
+            public override SortedList<string, FileSystemEntry> GetFileSystemEntries(bool topOnly)
             {
                 string responseString = GetListDirectoryString(uri.AbsoluteUri, topOnly);
                 if (string.IsNullOrWhiteSpace(responseString)) return null;
@@ -627,7 +627,7 @@ namespace E.Data
                 int count = matchCollection.Count;
                 if (count > 0)
                 {
-                    SortedList<string, ResourceInfo> resourceList = new SortedList<string, ResourceInfo>();
+                    SortedList<string, FileSystemEntry> resourceList = new SortedList<string, FileSystemEntry>();
                     if(count > 1)
                     {
                         for (int i = 1; i < count; i++)
@@ -639,7 +639,7 @@ namespace E.Data
                                 string mLastModified = groupCollection[2].Value;
                                 string mName = groupCollection[3].Value;
                                 string mIsFolder = groupCollection[4].Value;
-                                resourceList.Add(mUri, new ResourceInfo
+                                resourceList.Add(mUri, new FileSystemEntry
                                 {
                                     uri = mUri,
                                     name = mName,
@@ -1272,9 +1272,66 @@ namespace E.Data
                 }
             }
 
-            public override SortedList<string, ResourceInfo> ListDirectory(bool topOnly)
+            public override SortedList<string, FileSystemEntry> GetFileSystemEntries(bool topOnly)
             {
-                throw new NotImplementedException();
+                SortedList<string, FileSystemEntry> result = null;
+                GetFileSystemEntries0(ref result, FileName, topOnly);
+                return result;
+            }
+
+            private readonly Regex MSDOSRegex = new Regex(@"([0-9]+-[0-9]+-[0-9]+\s+[0-9]+:[0-9]+[AP]M)\s+(\S+)\s+(.+)");
+
+            private const string DIRMark = "<DIR>";
+
+            private void GetFileSystemEntries0(ref SortedList<string, FileSystemEntry> result, string uri, bool topOnly)
+            {
+                System.IO.StreamReader streamReader = null;
+                System.Net.FtpWebResponse ftpWebResponse = null;
+                System.Net.FtpWebRequest ftpWebRequest = null;
+                try
+                {
+                    if (!uri.EndsWith(slash)) uri += slash;
+                    ftpWebRequest = GetRequest(uri, System.Net.WebRequestMethods.Ftp.ListDirectoryDetails);
+                    ftpWebResponse = GetResponse(ftpWebRequest);
+                    System.IO.Stream responseStream = ftpWebResponse.GetResponseStream();
+                    streamReader = new System.IO.StreamReader(responseStream, true);
+                    string line = null;
+                    if (result == null) result = new SortedList<string, FileSystemEntry>();
+                    while ((line = streamReader.ReadLine()) != null)
+                    {
+                        MatchCollection matchCollection = MSDOSRegex.Matches(line);
+                        if (matchCollection.Count > 0)
+                        {
+                            GroupCollection groupCollection = matchCollection[0].Groups;
+                            if (groupCollection.Count == 4)
+                            {
+                                string mLastModified = groupCollection[1].Value;
+                                string mMark = groupCollection[2].Value;
+                                string mName = groupCollection[3].Value;
+                                string mUri = uri + mName;
+                                bool isFolder = false;
+                                if (mMark.Equals(DIRMark)) { isFolder = true; }
+                                result[mUri] = new DataStream.FileSystemEntry()
+                                {
+                                    uri = mUri,
+                                    name = mName,
+                                    lastModified = Convert.ToDateTime(mLastModified),
+                                    isFolder = isFolder
+                                };
+                                if (isFolder && !topOnly) { GetFileSystemEntries0(ref result, mUri, topOnly); }
+                            }
+                        }
+                        else { throw new System.Exception("ftp LIST only support MS-DOS(M) style."); }
+                    }
+                    return;
+                }
+                catch { throw; }
+                finally
+                {
+                    streamReader?.Dispose();
+                    ftpWebResponse?.Dispose();
+                    ftpWebRequest?.Abort();
+                }
             }
         }
     }
