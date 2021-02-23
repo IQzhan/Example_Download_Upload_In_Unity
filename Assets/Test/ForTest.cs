@@ -6,6 +6,7 @@ using System.Globalization;
 using System.IO;
 using System.Net;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Xml;
 using UnityEngine;
 
@@ -158,76 +159,48 @@ namespace E
             //        { Debug.LogError(cloneAsyncOperation.Data.Length); }
             //    }
             //};
-            SortedList<string, DataStream.ResourceInfo> srl = GetDirectoryContents("http://localhost:4322/", true);
-            //foreach(KeyValuePair<string, Resource> kvp in srl)
-            //{ Debug.LogError(kvp.Value); }
 
+            //SortedList<string, DataStream.ResourceInfo> dirs = ListDirectory("F:/Work/WebApplications/testhttpfiles");
+            //foreach(KeyValuePair<string, DataStream.ResourceInfo> kv in dirs)
+            //{ Debug.LogError(kv.Value); }
         }
 
-        private const string requestString =
-            "<?xml version=\"1.0\" encoding=\"utf-8\" ?>" +
-            "<a:propfind xmlns:a=\"DAV:\">" +
-            "<a:prop>" +
-            "<a:displayname/>" +
-            "<a:iscollection/>" +
-            "<a:getlastmodified/>" +
-            "</a:prop>" +
-            "</a:propfind>";
-        private static byte[] requestBytes = Encoding.ASCII.GetBytes(requestString);
+        private static readonly Regex fileNameRegex = new Regex(@"(?:[/\\]+([^/\\]+)[/\\]*)$");
 
-        private const string PROPFIND = "PROPFIND";
+        private static string GetDirectoryName(string filePath)
+        { return fileNameRegex.Replace(filePath, string.Empty); }
 
-        public static SortedList<string, DataStream.ResourceInfo> GetDirectoryContents(string url, bool deep)
+        private static string GetFileName(string filePath)
+        { return fileNameRegex.Match(filePath).Groups[1].Value; }
+
+        //public SortedList<string, DataStream.ResourceInfo> ListDirectory(string fileName, bool topOnly = false)
+        //{
+        //    string[] entries = System.IO.Directory.GetFileSystemEntries(fileName, "*", topOnly ? System.IO.SearchOption.TopDirectoryOnly : System.IO.SearchOption.AllDirectories);
+        //    if (entries != null && entries.Length > 0)
+        //    {
+        //        SortedList<string, DataStream.ResourceInfo> infos = new SortedList<string, DataStream.ResourceInfo>();
+        //        for (int i = 0; i < entries.Length; i++)
+        //        {
+        //            string entry = entries[i];
+        //            string name = GetFileName(entry);
+        //            bool isFolder = System.IO.Directory.Exists(entry);
+        //            infos[entry] = new DataStream.ResourceInfo()
+        //            {
+        //                uri = entry,
+        //                name = name,
+        //                isFolder = isFolder,
+        //                lastModified = System.IO.Directory.GetLastWriteTime(entry)
+        //            };
+        //        }
+        //        return infos;
+        //    }
+        //    return null;
+        //}
+
+        public SortedList<string, DataStream.ResourceInfo> ListDirectory(string fileName, bool topOnly = false)
         {
-            HttpWebRequest webRequest = null;
-            HttpWebResponse webResponse = null;
-            try
-            {
-                webRequest = (HttpWebRequest)WebRequest.Create(url);
-                webRequest.Credentials = CredentialCache.DefaultCredentials;
-                webRequest.Method = PROPFIND;
-                webRequest.Headers.Add("Translate: f");
-                if (deep == true) { webRequest.Headers.Add("Depth: infinity"); }
-                else { webRequest.Headers.Add("Depth: 1"); }
-                webRequest.ContentLength = requestString.Length;
-                webRequest.ContentType = "text/xml";
-                Stream requestStream = webRequest.GetRequestStream();
-                requestStream.Write(requestBytes, 0, requestBytes.Length);
-                requestStream.Dispose();
-                webResponse = (HttpWebResponse)webRequest.GetResponse();
-                StreamReader streamReader = new StreamReader(webResponse.GetResponseStream(), Encoding.UTF8);
-                string responseString = streamReader.ReadToEnd();
-                streamReader.Dispose();
-                XmlDocument XmlDoc = new XmlDocument();
-                XmlDoc.LoadXml(responseString);
-                XmlNamespaceManager nsmgr = new XmlNamespaceManager(XmlDoc.NameTable);
-                nsmgr.AddNamespace("a", "DAV:");
-                XmlNodeList NameList = XmlDoc.SelectNodes("//a:prop/a:displayname", nsmgr);
-                XmlNodeList isFolderList = XmlDoc.SelectNodes("//a:prop/a:iscollection", nsmgr);
-                XmlNodeList LastModList = XmlDoc.SelectNodes("//a:prop/a:getlastmodified", nsmgr);
-                XmlNodeList HrefList = XmlDoc.SelectNodes("//a:href", nsmgr);
-                SortedList<string, DataStream.ResourceInfo> resourceList = new SortedList<string, DataStream.ResourceInfo>();
-                for (int i = 0; i < NameList.Count; i++)
-                {
-                    string theUri = HrefList[i].InnerText;
-                    resourceList.Add(theUri, new DataStream.ResourceInfo
-                    {
-                        uri = theUri,
-                        name = NameList[i].InnerText,
-                        isFolder = Convert.ToBoolean(Convert.ToInt32(isFolderList[i].InnerText)),
-                        lastModified = Convert.ToDateTime(LastModList[i].InnerText)
-                    });
-                }
-                return resourceList;
-            }
-            catch (WebException e)
-            { Debug.LogException(e); return null; }
-            finally
-            {
-                webResponse?.Dispose();
-                webRequest?.Abort();
-            }
+            
+            return null;
         }
-
     }
 }

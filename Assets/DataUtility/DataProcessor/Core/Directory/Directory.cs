@@ -37,6 +37,8 @@ namespace E.Data
                     if (targetExists)
                     { 
                         asyncOperation.Resources = targetStream.ListDirectory(topOnly);
+                        if(asyncOperation.Resources == null)
+                        { throw new System.Exception("ListDirectory faild."); }
                         asyncOperation.Progress = 1;
                     }
                     else

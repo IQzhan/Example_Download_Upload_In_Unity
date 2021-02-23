@@ -269,7 +269,7 @@ namespace E.Data
                 if(entries != null && entries.Length > 0)
                 {
                     SortedList<string, ResourceInfo> infos = new SortedList<string, ResourceInfo>();
-                    for(int i = 10; i < entries.Length; i++)
+                    for(int i = 0; i < entries.Length; i++)
                     {
                         string entry = entries[i];
                         string name = GetFileName(entry);
@@ -621,7 +621,116 @@ namespace E.Data
 
             public override SortedList<string, ResourceInfo> ListDirectory(bool topOnly)
             {
-                throw new NotImplementedException();
+                string responseString = GetListDirectoryString(uri.AbsoluteUri, topOnly);
+                if (string.IsNullOrWhiteSpace(responseString)) return null;
+                MatchCollection matchCollection = ListDirectoryHelper.XmlFormatRegex.Matches(responseString);
+                int count = matchCollection.Count;
+                if (count > 0)
+                {
+                    SortedList<string, ResourceInfo> resourceList = new SortedList<string, ResourceInfo>();
+                    if(count > 1)
+                    {
+                        for (int i = 1; i < count; i++)
+                        {
+                            GroupCollection groupCollection = matchCollection[i].Groups;
+                            if (groupCollection.Count == 5)
+                            {
+                                string mUri = groupCollection[1].Value;
+                                string mLastModified = groupCollection[2].Value;
+                                string mName = groupCollection[3].Value;
+                                string mIsFolder = groupCollection[4].Value;
+                                resourceList.Add(mUri, new ResourceInfo
+                                {
+                                    uri = mUri,
+                                    name = mName,
+                                    isFolder = Convert.ToBoolean(Convert.ToInt32(mIsFolder)),
+                                    lastModified = Convert.ToDateTime(mLastModified)
+                                });
+                            }
+                        }
+                    }
+                    return resourceList;
+                }
+                return null;
+            }
+
+            private static class ListDirectoryHelper
+            {
+                static ListDirectoryHelper()
+                {
+                    string RequestString =
+                    "<?xml version=\"1.0\" encoding=\"utf-8\" ?>" +
+                    "<a:propfind xmlns:a=\"DAV:\">" +
+                    "<a:prop>" +
+                    "<a:displayname/>" +
+                    "<a:iscollection/>" +
+                    "<a:getlastmodified/>" +
+                    "</a:prop>" +
+                    "</a:propfind>";
+                    RequestStringLength = RequestString.Length;
+                    RequestBytes = System.Text.Encoding.ASCII.GetBytes(RequestString);
+                }
+
+                public static Regex XmlFormatRegex = new Regex(@"<D:response><D:href>([^<>]+)</D:href><D:propstat><D:status>[^<>]+</D:status><D:prop><D:getlastmodified>([^<>]+)</D:getlastmodified><D:displayname>([^<>]+)</D:displayname><D:iscollection>([01])</D:iscollection></D:prop></D:propstat></D:response>");
+
+                public static int RequestStringLength;
+
+                public static byte[] RequestBytes;
+
+                public const string PROPFIND = "PROPFIND";
+
+                public const string HEADER_Translate_f = "Translate: f";
+
+                public const string HEADER_Depth_infinity = "Depth: infinity";
+
+                public const string HEADER_Depth_1 = "Depth: 1";
+
+                public const string ContentType = "text/xml";
+            }
+
+            private string GetListDirectoryString(string uri, bool topOnly)
+            {
+                System.Net.HttpWebRequest webRequest = null;
+                System.Net.HttpWebResponse webResponse = null;
+                System.IO.Stream requestStream = null;
+                System.IO.Stream responseStream = null;
+                try
+                {
+                    webRequest = GetRequest(uri, ListDirectoryHelper.PROPFIND);
+                    webRequest.Headers.Add(ListDirectoryHelper.HEADER_Translate_f);
+                    if (!topOnly) { webRequest.Headers.Add(ListDirectoryHelper.HEADER_Depth_infinity); }
+                    else { webRequest.Headers.Add(ListDirectoryHelper.HEADER_Depth_1); }
+                    webRequest.ContentLength = ListDirectoryHelper.RequestStringLength;
+                    webRequest.ContentType = ListDirectoryHelper.ContentType;
+                    requestStream = webRequest.GetRequestStream();
+                    requestStream.Write(ListDirectoryHelper.RequestBytes, 0, ListDirectoryHelper.RequestBytes.Length);
+                    requestStream.Dispose(); requestStream = null;
+                    webResponse = GetResponse(webRequest);
+                    responseStream = webResponse.GetResponseStream();
+                    long currentPosition = 0;
+                    long length = responseStream.Length;
+                    byte[] data = new byte[length];
+                    byte[] temp = new byte[1024];
+                    while (currentPosition < length)
+                    {
+                        int readCount = responseStream.Read(temp, 0, 1024);
+                        for (int i = 0; i < readCount; i++)
+                        { data[currentPosition + i] = temp[i]; }
+                        currentPosition += readCount;
+                    }
+                    responseStream.Dispose(); responseStream = null;
+                    webResponse?.Dispose(); webResponse = null;
+                    webRequest?.Abort(); webRequest = null;
+                    return System.Text.Encoding.UTF8.GetString(data);
+                }
+                catch { throw; }
+                finally
+                {
+                    responseStream?.Dispose();
+                    requestStream?.Dispose();
+                    webResponse?.Dispose();
+                    webRequest?.Abort();
+                }
             }
         }
 

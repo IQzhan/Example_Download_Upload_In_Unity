@@ -6,9 +6,7 @@ namespace E.Data
     public abstract class DataStream : System.IDisposable
     {
         protected DataStream(in System.Uri uri)
-        {
-            this.uri = uri;
-        }
+        { this.uri = uri; }
 
         public System.Uri uri;
 
@@ -105,6 +103,8 @@ namespace E.Data
             public string name;
             public bool isFolder;
             public DateTime lastModified;
+            public override string ToString()
+            { return uri + ", name: " + name + (isFolder ? ", type: folder" : ", type: file") + ", last modified: " + lastModified; }
         }
 
         protected abstract void ReleaseManaged();
