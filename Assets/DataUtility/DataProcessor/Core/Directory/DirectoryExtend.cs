@@ -31,7 +31,7 @@ namespace E.Data
 
             public new double Progress { get { return base.progress; } set { base.progress = value; } }
 
-            public new SortedList<string, DataStream.FileSystemEntry> Entries { get { return base.Entries; } set { base.Entries = value; } }
+            public new SortedList<string, FileSystemEntry> Entries { get { return base.Entries; } set { base.Entries = value; } }
         }
     }
 }

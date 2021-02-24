@@ -35,7 +35,7 @@ namespace E
         private DataProcessor dataProcessor;
 
         private CloneAsyncOperation cloneAsyncOperation;
-
+        private DeleteAsyncOperation deleteAsyncOperation;
         private void Awake()
         {
             Init();
@@ -52,9 +52,10 @@ namespace E
 
         private void DrawProgress()
         {
-            if(cloneAsyncOperation != null && cloneAsyncOperation.Size > 0)
+            sb.Clear();
+            if (cloneAsyncOperation != null && cloneAsyncOperation.Size > 0)
             {
-                sb.Clear();
+                sb.Append("clone:");
                 sb.Append("progress: ");
                 sb.Append(cloneAsyncOperation.Progress);
                 sb.Append(System.Environment.NewLine);
@@ -70,8 +71,16 @@ namespace E
                 sb.Append("processed size: ");
                 sb.Append(Utility.FormatDataSize(cloneAsyncOperation.ProcessedBytes));
                 sb.Append(System.Environment.NewLine);
-                OverridePrint(sb.ToString());
             }
+            if (deleteAsyncOperation != null)
+            {
+                sb.Append("delete:");
+                sb.Append("progress: ");
+                sb.Append(deleteAsyncOperation.Progress);
+                sb.Append(System.Environment.NewLine);
+            }
+            
+            OverridePrint(sb.ToString());
         }
 
         private void OnDestroy()
@@ -165,8 +174,17 @@ namespace E
             //{ Debug.LogError(kv.Value); }
 
             //TODO test delete
-
+            //file
+            //deleteAsyncOperation = dataProcessor.Delete("E://Downloads/suckmydick.txt");
+            //http
+            //deleteAsyncOperation = dataProcessor.Delete("http://localhost:4322/新建文件夹");
+            //deleteAsyncOperation.targetAccount = new ConnectionAsyncOperation.Account() { username = "admin", password = "123456" };
+            //ftp
+            //deleteAsyncOperation = dataProcessor.Delete("ftp://localhost/Downloads/新建文本文档.txt");
+            //deleteAsyncOperation.targetAccount = new ConnectionAsyncOperation.Account() { username = "admin", password = "123456" };
             //TODO test Directory
+
+            //TODO Compare
 
             //TODO group
 
@@ -174,8 +192,68 @@ namespace E
 
             //TODO android
 
-            
+            //Debug.LogError(Refresh("http://localhost:4322/Downloads"));
 
+            DeleteDir("ftp://localhost/suckmydick/新文件夹/");
+
+            
+        }
+
+        private bool DeleteDir(string dirUri)
+        {
+            if (dirUri == null) return false;
+            System.Net.FtpWebRequest ftpWebRequest = null;
+            System.Net.FtpWebResponse ftpWebResponse = null;
+            try
+            {
+                ftpWebRequest = GetRequest(dirUri, System.Net.WebRequestMethods.Ftp.RemoveDirectory);
+                ftpWebResponse = GetResponse(ftpWebRequest);
+                return true;
+            }
+            catch (System.Exception e)
+            { throw new System.IO.IOException("delete faild." + Environment.NewLine + e.Message + Environment.NewLine + e.StackTrace); }
+            finally
+            {
+                ftpWebResponse?.Dispose();
+                ftpWebRequest?.Abort();
+            }
+        }
+
+        private bool Refresh(string uri)
+        {
+            System.Net.HttpWebRequest testRequest = null;
+            System.Net.HttpWebResponse testResponse = null;
+            try
+            {
+                testRequest = WebRequest.CreateHttp(uri);
+                testRequest.Method = WebRequestMethods.Http.Head;
+                testRequest.AllowAutoRedirect = true;
+                testRequest.Credentials = new System.Net.NetworkCredential("admin", "123456");
+                testResponse = testRequest.GetResponse() as System.Net.HttpWebResponse;
+                long length = testResponse.ContentLength;
+                Debug.LogError(length);
+                DateTime lastModified = testResponse.LastModified;
+                Debug.LogError(lastModified);
+                return true;
+            }
+            catch (System.Net.WebException e)
+            {
+                if (testResponse == null)
+                    testResponse = e.Response as System.Net.HttpWebResponse;
+                switch (testResponse.StatusCode)
+                {
+                    case System.Net.HttpStatusCode.NotFound:
+                        break;
+                    default:
+                        throw new System.IO.IOException("cause an connection error at: " + uri + Environment.NewLine + e.Message + Environment.NewLine + e.StackTrace);
+                }
+                return false;
+            }
+            finally
+            {
+                testRequest?.Abort();
+                testResponse?.Dispose();
+            }
         }
 
         //private static readonly Regex fileNameRegex = new Regex(@"(?:[/\\]+([^/\\]+)[/\\]*)$");
@@ -278,20 +356,18 @@ namespace E
 
         //private string password;
 
-        //private System.Net.FtpWebRequest GetRequest(string uri, string mathod)
-        //{
-        //    System.Net.FtpWebRequest req = System.Net.WebRequest.Create(uri) as System.Net.FtpWebRequest;
-        //    if (req == null) return null;
-        //    req.Method = mathod;
-        //    if (username != null && password != null)
-        //    { req.Credentials = new System.Net.NetworkCredential(username, password); }
-        //    req.KeepAlive = false;
-        //    req.UsePassive = false;
-        //    req.UseBinary = true;
-        //    return req;
-        //}
+        private System.Net.FtpWebRequest GetRequest(string uri, string mathod)
+        {
+            System.Net.FtpWebRequest req = System.Net.WebRequest.Create(uri) as System.Net.FtpWebRequest;
+            req.Method = mathod;
+            req.Credentials = new System.Net.NetworkCredential("admin", "123456");
+            req.KeepAlive = false;
+            req.UsePassive = false;
+            req.UseBinary = true;
+            return req;
+        }
 
-        //private System.Net.FtpWebResponse GetResponse(System.Net.FtpWebRequest request)
-        //{ return request.GetResponse() as System.Net.FtpWebResponse; }
+        private System.Net.FtpWebResponse GetResponse(System.Net.FtpWebRequest request)
+        { return request.GetResponse() as System.Net.FtpWebResponse; }
     }
 }

@@ -10,7 +10,7 @@ namespace E.Data
         
         public override double Progress => progress;
 
-        public SortedList<string, DataStream.FileSystemEntry> Entries { get; protected set; }
+        public SortedList<string, FileSystemEntry> Entries { get; protected set; }
 
     }
 }

@@ -41,6 +41,7 @@
                                 { asyncOperation.Progress = 1; }
                                 else { throw new System.Exception(@"delete faild."); }
                             }
+                            else { asyncOperation.Progress = 1; }
                         }
                         catch (System.Exception e)
                         {

@@ -29,6 +29,7 @@ namespace E.Data
                     asyncOperation.IsWorking = true;
                     targetStream.Timeout = asyncOperation.Timeout;
                     targetStream.SetAccount(asyncOperation.targetAccount.username, asyncOperation.targetAccount.password);
+                    targetStream.AsCollection = true;
                     if (asyncOperation.IsClosed) return;
                     if (targetStream.TestConnection(asyncOperation.ForceTestConnection))
                     { asyncOperation.Progress = 0.1f; }

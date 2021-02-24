@@ -28,6 +28,11 @@ namespace E.Data
         public abstract bool TestConnection(bool force);
 
         /// <summary>
+        /// set target as a collection (folder)
+        /// </summary>
+        public abstract bool AsCollection { get; set; }
+
+        /// <summary>
         /// test connection and return true if successed.
         /// </summary>
         public abstract bool Exists { get; }
@@ -96,19 +101,6 @@ namespace E.Data
         /// <param name="topOnly"></param>
         /// <returns></returns>
         public abstract SortedList<string, FileSystemEntry> GetFileSystemEntries(bool topOnly);
-
-        /// <summary>
-        /// file or folder
-        /// </summary>
-        public struct FileSystemEntry
-        {
-            public string uri;
-            public string name;
-            public bool isFolder;
-            public DateTime lastModified;
-            public override string ToString()
-            { return "uri: " + uri + ", name: " + name + (isFolder ? ", type: folder" : ", type: file") + ", lastModified: " + lastModified; }
-        }
 
         protected abstract void ReleaseManaged();
 

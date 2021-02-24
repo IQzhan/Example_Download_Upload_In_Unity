@@ -52,9 +52,11 @@ namespace E.Data
 
             public override void SetAccount(string username, string password) { }
 
-            public override int Timeout { get => 0; set { } }
+            public override int Timeout { get; set; }
 
             public override bool TestConnection(bool force) { return true; }
+
+            public override bool AsCollection { get; set; } = false;
 
             public override bool Exists
             { get { return RefreshFileName(); } }
@@ -63,6 +65,8 @@ namespace E.Data
 
             private System.IO.FileInfo fileInfo;
 
+            private System.IO.DirectoryInfo directoryInfo;
+
             private string FileName
             { get { if(fileName == null) { RefreshFileName(); } return fileName; } }
 
@@ -70,8 +74,10 @@ namespace E.Data
             {
                 ResetFileTarget();
                 string localPath = uri.LocalPath;
-                if (System.IO.File.Exists(localPath))
-                { fileName = localPath; fileInfo = null; fileInfo = new System.IO.FileInfo(fileName); }
+                if (System.IO.Directory.Exists(localPath))
+                { fileName = localPath; directoryInfo = new System.IO.DirectoryInfo(localPath); AsCollection = true; }
+                else if (System.IO.File.Exists(localPath))
+                { fileName = localPath; fileInfo = null; fileInfo = new System.IO.FileInfo(fileName); AsCollection = false; }
                 else
                 {
                     string name = GetFileName(localPath);
@@ -80,28 +86,31 @@ namespace E.Data
                     string[] fileNames = System.IO.Directory.GetFiles
                         (dir, name + ".*.downloading", System.IO.SearchOption.TopDirectoryOnly);
                     if (fileNames.Length > 0)
-                    { fileName = fileNames[0]; fileInfo = null; fileInfo = new System.IO.FileInfo(fileName); }
+                    { fileName = fileNames[0]; fileInfo = null; fileInfo = new System.IO.FileInfo(fileName); AsCollection = false; }
                 }
                 return fileName != null;
             }
 
             private void ResetFileTarget()
-            { fileName = null; fileInfo = null; }
+            { fileName = null; fileInfo = null; directoryInfo = null; }
 
             public override bool Complete
             {
-                get { string fn = FileName; return fn != null && !fn.EndsWith(extend); }
+                get { string fn = FileName; return fn != null && (AsCollection || (!AsCollection && !fn.EndsWith(extend))); }
                 set
                 {
-                    string fn = FileName;
-                    if (value && fn != null && fn.EndsWith(extend))
+                    if (!AsCollection)
                     {
-                        DisposeReadStream();
-                        DisposeWriteStream();
-                        System.DateTime lastTime = LastModified;
-                        fileInfo.MoveTo(uri.LocalPath);
-                        fileInfo.LastWriteTime = lastTime;
-                        ResetFileTarget();
+                        string fn = FileName;
+                        if (value && fn != null && fn.EndsWith(extend))
+                        {
+                            DisposeReadStream();
+                            DisposeWriteStream();
+                            System.DateTime lastTime = LastModified;
+                            fileInfo.MoveTo(uri.LocalPath);
+                            fileInfo.LastWriteTime = lastTime;
+                            ResetFileTarget();
+                        }
                     }
                 }
             }
@@ -110,7 +119,7 @@ namespace E.Data
             { get { return FileName != null ? GetLength() : 0; } }
 
             private long GetLength() 
-            { return ReadStream.Length; }
+            { return !AsCollection ? ReadStream.Length : 0; }
 
             private System.DateTime lastModified = System.DateTime.MinValue;
 
@@ -121,29 +130,39 @@ namespace E.Data
                     string fn = FileName;
                     if (fn != null)
                     {
-                        if (fn.EndsWith(extend))
+                        if (!AsCollection)
                         {
-                            MatchCollection matchCollection = LastModifiedRegex.Matches(fn);
-                            if(matchCollection.Count > 0)
+                            if (fn.EndsWith(extend))
                             {
-                                string val = matchCollection[0].Groups[1].Value;
-                                if(long.TryParse(val, out long lastmodifiedTick))
-                                { lastModified = new System.DateTime(lastmodifiedTick); }
+                                MatchCollection matchCollection = LastModifiedRegex.Matches(fn);
+                                if (matchCollection.Count > 0)
+                                {
+                                    string val = matchCollection[0].Groups[1].Value;
+                                    if (long.TryParse(val, out long lastmodifiedTick))
+                                    { lastModified = new System.DateTime(lastmodifiedTick); }
+                                }
                             }
+                            else
+                            { lastModified = fileInfo.LastWriteTime; }
                         }
                         else
-                        { lastModified = fileInfo.LastWriteTime; }
+                        {
+                            lastModified = directoryInfo.LastWriteTime;
+                        }
                     }
                     return lastModified;
                 }
                 set
                 {
-                    string fn = FileName;
-                    if (fn != null)
+                    if (!AsCollection)
                     {
-                        if (fn.EndsWith(extend))
-                        { fileInfo.MoveTo(uri.LocalPath + value.Ticks.ToString() + extend); }
-                        fileInfo.LastWriteTime = value;
+                        string fn = FileName;
+                        if (fn != null)
+                        {
+                            if (fn.EndsWith(extend))
+                            { fileInfo.MoveTo(uri.LocalPath + value.Ticks.ToString() + extend); }
+                            fileInfo.LastWriteTime = value;
+                        }
                     }
                     lastModified = value;
                 }
@@ -160,20 +179,34 @@ namespace E.Data
 
             public override bool Delete()
             {
-                if (FileName != null) fileInfo.Delete();
+                if (FileName != null)
+                {
+                    if (!AsCollection) { fileInfo.Delete(); }
+                    else { directoryInfo.Delete(); }
+                }                    
                 ResetFileTarget();
                 return true;
             }
 
             public override bool Create()
             {
-                System.DateTime lasttime = LastModified;
-                if (fileName == null && lasttime != System.DateTime.MinValue) 
+                if (!AsCollection)
+                {
+                    System.DateTime lasttime = LastModified;
+                    if (fileName == null && lasttime != System.DateTime.MinValue)
+                    {
+                        string localPath = uri.LocalPath;
+                        string dir = GetDirectoryName(localPath);
+                        if (!System.IO.Directory.Exists(dir)) { System.IO.Directory.CreateDirectory(dir); }
+                        System.IO.File.Create(localPath + "." + lasttime.Ticks.ToString() + extend).Dispose();
+                        ResetFileTarget();
+                        return true;
+                    }
+                }
+                else
                 {
                     string localPath = uri.LocalPath;
-                    string dir = GetDirectoryName(localPath);
-                    if (!System.IO.Directory.Exists(dir)) { System.IO.Directory.CreateDirectory(dir); }
-                    System.IO.File.Create(localPath + "." + lasttime.Ticks.ToString() + extend).Dispose();
+                    System.IO.Directory.CreateDirectory(localPath);
                     ResetFileTarget();
                     return true;
                 }
@@ -186,14 +219,20 @@ namespace E.Data
             {
                 get
                 {
-                    System.IO.Stream stream = GetStream();
-                    if (stream != null) position = stream.Position;
+                    if (!AsCollection)
+                    {
+                        System.IO.Stream stream = GetStream();
+                        if (stream != null) position = stream.Position;
+                    }
                     return position;
                 }
                 set
                 {
-                    System.IO.Stream stream = GetStream();
-                    if (stream != null) stream.Position = position = value;
+                    if (!AsCollection)
+                    {
+                        System.IO.Stream stream = GetStream();
+                        if (stream != null) stream.Position = position = value;
+                    }
                 }
             }
 
@@ -249,10 +288,10 @@ namespace E.Data
             }
 
             public override int Read(byte[] buffer, int offset, int count)
-            { return ReadStream.Read(buffer, offset, count); }
+            { if (!AsCollection) { return ReadStream.Read(buffer, offset, count); } else return 0; }
 
             public override void Write(byte[] buffer, int offset, int count)
-            { WriteStream.Write(buffer, offset, count); }
+            { if (!AsCollection) { WriteStream.Write(buffer, offset, count); } }
 
             protected override void ReleaseManaged()
             { ResetFileTarget(); }
@@ -265,11 +304,12 @@ namespace E.Data
 
             public override SortedList<string, FileSystemEntry> GetFileSystemEntries(bool topOnly)
             {
+                if (!AsCollection) { return null; }
                 string[] entries = System.IO.Directory.GetFileSystemEntries(FileName, "*", topOnly ? System.IO.SearchOption.TopDirectoryOnly : System.IO.SearchOption.AllDirectories);
-                if(entries != null && entries.Length > 0)
+                if (entries != null && entries.Length > 0)
                 {
                     SortedList<string, FileSystemEntry> infos = new SortedList<string, FileSystemEntry>();
-                    for(int i = 0; i < entries.Length; i++)
+                    for (int i = 0; i < entries.Length; i++)
                     {
                         string entry = entries[i];
                         string name = GetFileName(entry);
@@ -307,6 +347,8 @@ namespace E.Data
                 if (!string.IsNullOrWhiteSpace(username) && !string.IsNullOrWhiteSpace(password))
                 { this.username = username; this.password = password; }
             }
+
+            public override bool AsCollection { get; set; } = false;
 
             public override bool Exists
             { get { return TestConnection(false) && Refresh(); } }
@@ -356,7 +398,8 @@ namespace E.Data
                 {
                     testRequest = GetRequest(uri.AbsoluteUri, System.Net.WebRequestMethods.Http.Head);
                     testResponse = GetResponse(testRequest);
-                    length = testResponse.ContentLength;
+                    if (AsCollection) length = 0;
+                    else length = testResponse.ContentLength;
                     lastModified = testResponse.LastModified;
                     return true;
                 }
@@ -420,16 +463,18 @@ namespace E.Data
             }
 
             public override bool Create()
-            { return CreateFile(uri.AbsoluteUri) && Refresh(); }
+            { return ((!AsCollection && CreateFile(uri.AbsoluteUri)) || (AsCollection && CreateDir(uri.AbsoluteUri))) && Refresh(); }
 
             public override int Read(byte[] buffer, int offset, int count)
             {
-                return ResponseStream.Read(buffer, offset, count);
+                if (!AsCollection) { return ResponseStream.Read(buffer, offset, count); }
+                else return 0;
             }
 
             public override void Write(byte[] buffer, int offset, int count)
             {
-                RequestStream.Write(buffer, offset, count);
+                if (!AsCollection)
+                { RequestStream.Write(buffer, offset, count); }
             }
 
             protected override void ReleaseManaged()
@@ -606,7 +651,7 @@ namespace E.Data
                     return true;
                 }
                 catch (System.Net.WebException e)
-                { 
+                {
                     if(httpWebResponse == null)
                     { httpWebResponse = e.Response as System.Net.HttpWebResponse; }
                     if (httpWebResponse.StatusCode == System.Net.HttpStatusCode.NotFound) return true;
@@ -621,6 +666,7 @@ namespace E.Data
 
             public override SortedList<string, FileSystemEntry> GetFileSystemEntries(bool topOnly)
             {
+                if (!AsCollection) { return null; }
                 string responseString = GetListDirectoryString(uri.AbsoluteUri, topOnly);
                 if (string.IsNullOrWhiteSpace(responseString)) return null;
                 MatchCollection matchCollection = ListDirectoryHelper.XmlFormatRegex.Matches(responseString);
@@ -754,6 +800,8 @@ namespace E.Data
                 { this.username = username; this.password = password; }
             }
 
+            public override bool AsCollection { get; set; } = false;
+
             public override bool Exists
             { get { return TestConnection(false) && RefreshFileName(); } }
 
@@ -810,23 +858,25 @@ namespace E.Data
                 string absUri = uri.OriginalString;
                 string fname = GetFileName(absUri);
                 string dirUri = GetDirectoryName(absUri);
-                string[] fileNames = GetFiles(dirUri);
-                if (fileNames == null || fileNames.Length == 0) return false;
-                string fromArr = GetNameFromArray(fname, fileNames);
-                if (fromArr != null) { fileName = dirUri + slash + fromArr; }
+                //string[] fileNames = GetFiles(dirUri);
+                //if (fileNames == null || fileNames.Length == 0) return false;
+                //string fromArr = GetNameFromArray(fname, fileNames);
+                //if (fromArr != null) { fileName = dirUri + slash + fromArr; }
+                fileName = GetFiles(dirUri, fname, out bool isFolder);
+                AsCollection = isFolder;
                 return fileName != null;
             }
 
-            private string GetNameFromArray(string name, string[] strs)
-            {
-                for(int i = 0; i < strs.Length; i++)
-                {
-                    string comstr = strs[i];
-                    if(comstr == name || (comstr.Contains(name) && comstr.EndsWith(extend)))
-                    { return comstr; }
-                }
-                return null;
-            }
+            //private string GetNameFromArray(string name, string[] strs)
+            //{
+            //    for(int i = 0; i < strs.Length; i++)
+            //    {
+            //        string comstr = strs[i];
+            //        if(comstr == name || (comstr.Contains(name) && comstr.EndsWith(extend)))
+            //        { return comstr; }
+            //    }
+            //    return null;
+            //}
 
             private void ResetFileTarget()
             {
@@ -837,9 +887,10 @@ namespace E.Data
 
             public override bool Complete
             {
-                get { string fn = FileName; return fn != null && !fn.EndsWith(extend); }
+                get { string fn = FileName; return fn != null && ( AsCollection || (!AsCollection && !fn.EndsWith(extend))); }
                 set
                 {
+                    if (AsCollection) return;
                     string fn = FileName;
                     if (value && fn != null && fn.EndsWith(extend))
                     {
@@ -853,7 +904,7 @@ namespace E.Data
             private long length = -1;
 
             public override long Length
-            { get { if (length == -1) { length = GetLength(FileName); } return length; } }
+            { get { if (length == -1) { length = !AsCollection ? GetLength(FileName) : 0; } return length; } }
 
             private System.DateTime lastModified = System.DateTime.MinValue;
 
@@ -864,7 +915,7 @@ namespace E.Data
                     string fn = FileName;
                     if (fn != null)
                     {
-                        if (fn.EndsWith(extend))
+                        if (!AsCollection && fn.EndsWith(extend))
                         {
                             System.Text.RegularExpressions.MatchCollection matchCollection = LastModifiedRegex.Matches(fn);
                             if (matchCollection.Count > 0)
@@ -881,12 +932,17 @@ namespace E.Data
                 }
                 set
                 {
-                    string fn = FileName;
-                    if (fn != null)
+                    if (!AsCollection)
                     {
-                        if (fn.EndsWith(extend))
-                        { if(!Rename(fn, GetFileName(uri.OriginalString) + "." + value.Ticks.ToString() + extend))
-                            { throw new System.IO.IOException("rename faild."); } }
+                        string fn = FileName;
+                        if (fn != null)
+                        {
+                            if (fn.EndsWith(extend))
+                            {
+                                if (!Rename(fn, GetFileName(uri.OriginalString) + "." + value.Ticks.ToString() + extend))
+                                { throw new System.IO.IOException("rename faild."); }
+                            }
+                        }
                     }
                     lastModified = value;
                 }
@@ -907,22 +963,27 @@ namespace E.Data
 
             public override bool Delete()
             {
-                if(DeleteFile(FileName)) { ResetFileTarget(); return true; }
+                if((!AsCollection && DeleteFile(FileName)) || (AsCollection && DeleteDir(FileName))) { ResetFileTarget(); return true; }
                 return false;
             }
 
             public override bool Create()
             {
-                if(fileName == null && LastModified != System.DateTime.MinValue)
-                { return CreateFile(uri.AbsoluteUri + "." + lastModified.Ticks.ToString() + extend); }
-                return false;
+                return 
+                    fileName != null || 
+                    (fileName == null &&
+                    ((!AsCollection &&
+                    LastModified != System.DateTime.MinValue &&
+                    CreateFile(uri.AbsoluteUri + "." + lastModified.Ticks.ToString() + extend)) ||
+                    (AsCollection && CreateDir(uri.AbsoluteUri))
+                    ));
             }
 
             public override int Read(byte[] buffer, int offset, int count)
-            { return ResponseStream.Read(buffer, offset, count); }
+            { return !AsCollection ? ResponseStream.Read(buffer, offset, count) : 0; }
 
             public override void Write(byte[] buffer, int offset, int count)
-            { RequestStream.Write(buffer, offset, count); }
+            { if(!AsCollection) RequestStream.Write(buffer, offset, count); }
 
             protected override void ReleaseManaged()
             {
@@ -1031,8 +1092,9 @@ namespace E.Data
                 }
             }
 
-            private string[] GetFiles(string dirUri)
+            private string GetFiles(string dirUri, string matchName, out bool isFolder)
             {
+                isFolder = false;
                 if (dirUri == null) return null;
                 System.IO.StreamReader streamReader = null;
                 System.Net.FtpWebResponse ftpWebResponse = null;
@@ -1040,15 +1102,30 @@ namespace E.Data
                 try
                 {
                     if (!dirUri.EndsWith(slash)) dirUri += slash;
-                    ftpWebRequest = GetRequest(dirUri, System.Net.WebRequestMethods.Ftp.ListDirectory);
+                    ftpWebRequest = GetRequest(dirUri, System.Net.WebRequestMethods.Ftp.ListDirectoryDetails);
                     ftpWebResponse = GetResponse(ftpWebRequest);
                     System.IO.Stream responseStream = ftpWebResponse.GetResponseStream();
                     streamReader = new System.IO.StreamReader(responseStream, true);
+                    string mStr = null;
                     string line = null;
-                    List<string> lines = new List<string>();
                     while ((line = streamReader.ReadLine()) != null)
-                    { lines.Add(line); }
-                    return lines.Count > 0 ? lines.ToArray() : null;
+                    {
+                        MatchCollection matchCollection = MSDOSRegex.Matches(line);
+                        if (matchCollection.Count > 0)
+                        {
+                            GroupCollection groupCollection = matchCollection[0].Groups;
+                            if (groupCollection.Count == 4)
+                            {
+                                string mMark = groupCollection[2].Value;
+                                string mName = groupCollection[3].Value;
+                                if (mMark.Equals(DIRMark)) { isFolder = true; }
+                                if(mName == matchName || (mName.Contains(matchName) && mName.EndsWith(extend)))
+                                { mStr = mName; }
+                            }
+                        }
+                        else { throw new System.Exception("ftp LIST only support MS-DOS(M) style."); }
+                    }
+                    return mStr;
                 }
                 catch (System.Net.WebException e)
                 {
@@ -1069,6 +1146,45 @@ namespace E.Data
                     ftpWebRequest?.Abort();
                 }
             }
+
+            //private string[] GetFiles(string dirUri)
+            //{
+            //    if (dirUri == null) return null;
+            //    System.IO.StreamReader streamReader = null;
+            //    System.Net.FtpWebResponse ftpWebResponse = null;
+            //    System.Net.FtpWebRequest ftpWebRequest = null;
+            //    try
+            //    {
+            //        if (!dirUri.EndsWith(slash)) dirUri += slash;
+            //        ftpWebRequest = GetRequest(dirUri, System.Net.WebRequestMethods.Ftp.ListDirectory);
+            //        ftpWebResponse = GetResponse(ftpWebRequest);
+            //        System.IO.Stream responseStream = ftpWebResponse.GetResponseStream();
+            //        streamReader = new System.IO.StreamReader(responseStream, true);
+            //        string line = null;
+            //        List<string> lines = new List<string>();
+            //        while ((line = streamReader.ReadLine()) != null)
+            //        { lines.Add(line); }
+            //        return lines.Count > 0 ? lines.ToArray() : null;
+            //    }
+            //    catch (System.Net.WebException e)
+            //    {
+            //        if (ftpWebResponse == null)
+            //            ftpWebResponse = e.Response as System.Net.FtpWebResponse;
+            //        switch (ftpWebResponse.StatusCode)
+            //        {
+            //            case System.Net.FtpStatusCode.ActionNotTakenFileUnavailable:
+            //            case System.Net.FtpStatusCode.ActionNotTakenFileUnavailableOrBusy:
+            //                return null;
+            //            default: throw new System.IO.IOException("get files faild." + Environment.NewLine + e.Message + Environment.NewLine + e.StackTrace);
+            //        }
+            //    }
+            //    finally
+            //    {
+            //        streamReader?.Dispose();
+            //        ftpWebResponse?.Dispose();
+            //        ftpWebRequest?.Abort();
+            //    }
+            //}
 
             private bool CreateFile(string fileUri)
             {
@@ -1180,6 +1296,26 @@ namespace E.Data
                 }
             }
 
+            private bool DeleteDir(string dirUri)
+            {
+                if (dirUri == null) return false;
+                System.Net.FtpWebRequest ftpWebRequest = null;
+                System.Net.FtpWebResponse ftpWebResponse = null;
+                try
+                {
+                    ftpWebRequest = GetRequest(dirUri, System.Net.WebRequestMethods.Ftp.RemoveDirectory);
+                    ftpWebResponse = GetResponse(ftpWebRequest);
+                    return true;
+                }
+                catch (System.Exception e)
+                { throw new System.IO.IOException("delete faild." + Environment.NewLine + e.Message + Environment.NewLine + e.StackTrace); }
+                finally
+                {
+                    ftpWebResponse?.Dispose();
+                    ftpWebRequest?.Abort();
+                }
+            }
+
             private bool DeleteFile(string fileUri)
             {
                 if (fileUri == null) return false;
@@ -1188,9 +1324,7 @@ namespace E.Data
                 try
                 {
                     ftpWebRequest = GetRequest(fileUri, System.Net.WebRequestMethods.Ftp.DeleteFile);
-                    if (ftpWebRequest == null) return false;
                     ftpWebResponse = GetResponse(ftpWebRequest);
-                    if (ftpWebResponse == null) return false;
                     return true;
                 }
                 catch (System.Exception e)
@@ -1274,6 +1408,7 @@ namespace E.Data
 
             public override SortedList<string, FileSystemEntry> GetFileSystemEntries(bool topOnly)
             {
+                if (AsCollection) return null;
                 SortedList<string, FileSystemEntry> result = null;
                 GetFileSystemEntries0(ref result, FileName, topOnly);
                 return result;
@@ -1311,7 +1446,7 @@ namespace E.Data
                                 string mUri = uri + mName;
                                 bool isFolder = false;
                                 if (mMark.Equals(DIRMark)) { isFolder = true; }
-                                result[mUri] = new DataStream.FileSystemEntry()
+                                result[mUri] = new FileSystemEntry()
                                 {
                                     uri = mUri,
                                     name = mName,
