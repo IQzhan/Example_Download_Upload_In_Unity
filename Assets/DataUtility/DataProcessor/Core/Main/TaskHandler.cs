@@ -3,11 +3,10 @@ using System.Collections.Generic;
 
 namespace E.Data
 {
-    public abstract class TaskHandler : System.IDisposable// where T : TaskHandler<T>.ITask
+    public abstract class TaskHandler : System.IDisposable
     {
         protected abstract class ITask
         {
-            public AsyncOperation asyncOperation;
             public System.Action bodyAction;
             public System.Action cleanAction;
             public abstract void RunTask();
@@ -29,12 +28,11 @@ namespace E.Data
 
         private LinkedList<ITask> taskList = new LinkedList<ITask>();
 
-        public void AddTask(in AsyncOperation asyncOperation, in System.Action body, in System.Action clean)
+        public void AddTask(in System.Action body, in System.Action clean)
         {
             if(body != null && clean != null)
             {
                 ITask task = GetTaskInstance();
-                task.asyncOperation = asyncOperation;
                 task.bodyAction = body;
                 task.cleanAction = clean;
                 actionQueue.Enqueue(task);
@@ -58,7 +56,6 @@ namespace E.Data
                 LinkedListNode<ITask> next = node.Next;
                 if (node.Value.IsEnded())
                 {
-                    node.Value.asyncOperation.Close();
                     node.Value.RunClear();
                     taskList.Remove(node);
                 }
@@ -83,7 +80,6 @@ namespace E.Data
             while (node != null)
             {
                 LinkedListNode<ITask> next = node.Next;
-                node.Value.asyncOperation.Close();
                 node.Value.RunClear();
                 taskList.Remove(node);
                 node = next;
@@ -95,7 +91,6 @@ namespace E.Data
         {
             while (!actionQueue.IsEmpty && actionQueue.TryDequeue(out ITask task))
             { 
-                task.asyncOperation.Close();
                 task.RunClear();
             }
             actionQueue = null;

@@ -4,10 +4,6 @@
     {
         protected AsyncOperation() { }
 
-        //in DataProcessor
-        //acount += 1
-        //aprogress += progress?x  
-
         /// <summary>
         /// callback on closed
         /// </summary>

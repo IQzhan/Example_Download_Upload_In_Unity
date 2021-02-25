@@ -36,6 +36,8 @@ namespace E
 
         private CloneAsyncOperation cloneAsyncOperation;
         private DeleteAsyncOperation deleteAsyncOperation;
+        private DirectoryAsyncOperation directoryAsyncOperation;
+
         private void Awake()
         {
             Init();
@@ -79,7 +81,13 @@ namespace E
                 sb.Append(deleteAsyncOperation.Progress);
                 sb.Append(System.Environment.NewLine);
             }
-            
+            if(directoryAsyncOperation != null)
+            {
+                sb.Append("directory");
+                sb.Append("progress: ");
+                sb.Append(directoryAsyncOperation.Progress);
+                sb.Append(System.Environment.NewLine);
+            }
             OverridePrint(sb.ToString());
         }
 
@@ -175,7 +183,7 @@ namespace E
 
             //TODO test delete
             //file
-            //deleteAsyncOperation = dataProcessor.Delete("E://Downloads/suckmydick.txt");
+            //deleteAsyncOperation = dataProcessor.Delete("E://Downloads/新建文件夹");
             //http
             //deleteAsyncOperation = dataProcessor.Delete("http://localhost:4322/新建文件夹");
             //deleteAsyncOperation.targetAccount = new ConnectionAsyncOperation.Account() { username = "admin", password = "123456" };
@@ -183,6 +191,22 @@ namespace E
             //deleteAsyncOperation = dataProcessor.Delete("ftp://localhost/Downloads/新建文本文档.txt");
             //deleteAsyncOperation.targetAccount = new ConnectionAsyncOperation.Account() { username = "admin", password = "123456" };
             //TODO test Directory
+            //directoryAsyncOperation = dataProcessor.GetFileSystemEntries(@"E://Downloads/");
+            //directoryAsyncOperation = dataProcessor.GetFileSystemEntries(@"ftp://localhost/Downloads/");
+            //directoryAsyncOperation = dataProcessor.GetFileSystemEntries(@"ftp://localhost/");
+            //directoryAsyncOperation = dataProcessor.GetFileSystemEntries(@"G://");
+            //directoryAsyncOperation = dataProcessor.GetFileSystemEntries(@"http://localhost:4322/Downloads0");
+            //directoryAsyncOperation.onClose += (() =>
+            //{
+            //    if (directoryAsyncOperation.IsClosed)
+            //    {
+            //        SortedList<string, FileSystemEntry> fe = directoryAsyncOperation.Entries;
+            //        if (fe != null)
+            //        {
+            //            foreach (KeyValuePair<string, FileSystemEntry> kv in fe) { Debug.LogError(kv.Key); }
+            //        }
+            //    }
+            //});
 
             //TODO Compare
 
@@ -194,9 +218,10 @@ namespace E
 
             //Debug.LogError(Refresh("http://localhost:4322/Downloads"));
 
-            DeleteDir("ftp://localhost/suckmydick/新文件夹/");
+            //DeleteDir("ftp://localhost/suckmydick/新建文件夹/");
 
             
+
         }
 
         private bool DeleteDir(string dirUri)
@@ -206,8 +231,18 @@ namespace E
             System.Net.FtpWebResponse ftpWebResponse = null;
             try
             {
-                ftpWebRequest = GetRequest(dirUri, System.Net.WebRequestMethods.Ftp.RemoveDirectory);
-                ftpWebResponse = GetResponse(ftpWebRequest);
+                ftpWebRequest = System.Net.WebRequest.Create(dirUri) as System.Net.FtpWebRequest;
+                ftpWebRequest.Method = System.Net.WebRequestMethods.Ftp.RemoveDirectory;
+                ftpWebRequest.Credentials = new System.Net.NetworkCredential("admin", "123456");
+                ftpWebRequest.KeepAlive = false;
+
+                ftpWebResponse = ftpWebRequest.GetResponse() as System.Net.FtpWebResponse;
+                long size = ftpWebResponse.ContentLength;
+                Stream datastream = ftpWebResponse.GetResponseStream();
+                StreamReader sr = new StreamReader(datastream);
+                string result = sr.ReadToEnd();
+                sr.Dispose();
+                Debug.LogError(result);
                 return true;
             }
             catch (System.Exception e)

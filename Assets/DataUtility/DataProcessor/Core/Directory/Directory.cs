@@ -19,7 +19,7 @@ namespace E.Data
         public DirectoryAsyncOperation GetFileSystemEntries(System.Uri target, bool topOnly = false)
         {
             if(Check(target, out DataStream targetStream, out DirectoryAsyncOperationImplement asyncOperation))
-            { commandHandler?.AddCommand(() => { taskHandler?.AddTask(asyncOperation, taskAction, cleanAction); }); }
+            { commandHandler?.AddCommand(() => { taskHandler?.AddTask(taskAction, cleanAction); }); }
             return asyncOperation; 
             void taskAction()
             {
@@ -54,6 +54,7 @@ namespace E.Data
             }
             void cleanAction()
             {
+                asyncOperation.Close();
                 targetStream?.Dispose(); targetStream = null;
                 commandHandler?.AddCommand(() => { asyncOperation.onClose?.Invoke(); });
             }

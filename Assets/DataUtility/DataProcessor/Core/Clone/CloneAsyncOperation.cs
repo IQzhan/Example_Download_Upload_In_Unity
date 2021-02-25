@@ -23,14 +23,6 @@
         public byte[] Data { get; protected set; }
 
         /// <summary>
-        /// Close connection
-        /// </summary>
-        public override void Close()
-        {
-            base.Close();
-        }
-
-        /// <summary>
         /// Size of data bytes
         /// </summary>
         public long Size { get; protected set; } = -1;

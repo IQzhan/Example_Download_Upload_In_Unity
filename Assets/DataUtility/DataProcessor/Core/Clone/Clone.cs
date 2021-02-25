@@ -67,12 +67,13 @@
                     }
                     void cleanTask()
                     {
+                        asyncOperation.Close();
                         targetStream.Dispose();
                         targetStream = null;
                         commandHandler?.AddCommand(() =>
                         { asyncOperation.onClose?.Invoke(); });
                     }
-                    taskHandler.AddTask(asyncOperation, taskAction, cleanTask);
+                    taskHandler.AddTask(taskAction, cleanTask);
                 });
             }
             return asyncOperation;
@@ -143,12 +144,13 @@
                     }
                     void cleanTask()
                     {
+                        asyncOperation.Close();
                         targetStream.Dispose();
                         targetStream = null;
                         commandHandler?.AddCommand(() =>
                         { asyncOperation.onClose?.Invoke(); });
                     }
-                    taskHandler.AddTask(asyncOperation, taskAction, cleanTask);
+                    taskHandler.AddTask(taskAction, cleanTask);
                 });
             }
             return asyncOperation;
@@ -311,6 +313,7 @@
                     }
                     void cleanTask()
                     {
+                        asyncOperation.Close();
                         sourceStream?.Dispose();
                         targetStream?.Dispose();
                         sourceStream = null;
@@ -318,7 +321,7 @@
                         commandHandler?.AddCommand(() =>
                         { asyncOperation.onClose?.Invoke(); });
                     }
-                    taskHandler.AddTask(asyncOperation, taskAction, cleanTask);
+                    taskHandler.AddTask(taskAction, cleanTask);
                 });
             return asyncOperation;
         }

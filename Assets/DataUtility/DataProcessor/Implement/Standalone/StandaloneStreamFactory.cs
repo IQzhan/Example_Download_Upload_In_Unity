@@ -182,7 +182,7 @@ namespace E.Data
                 if (FileName != null)
                 {
                     if (!AsCollection) { fileInfo.Delete(); }
-                    else { directoryInfo.Delete(); }
+                    else { directoryInfo.Delete(true); }
                 }                    
                 ResetFileTarget();
                 return true;
@@ -847,6 +847,8 @@ namespace E.Data
 
             private const string slash = "/";
 
+            private static readonly Regex hostRegex = new Regex(@"^(?:ftp://[^/\\]+[/\\]?)$");
+
             private string fileName;
 
             private string FileName
@@ -856,27 +858,17 @@ namespace E.Data
             {
                 ResetFileTarget();
                 string absUri = uri.OriginalString;
-                string fname = GetFileName(absUri);
-                string dirUri = GetDirectoryName(absUri);
-                //string[] fileNames = GetFiles(dirUri);
-                //if (fileNames == null || fileNames.Length == 0) return false;
-                //string fromArr = GetNameFromArray(fname, fileNames);
-                //if (fromArr != null) { fileName = dirUri + slash + fromArr; }
-                fileName = GetFiles(dirUri, fname, out bool isFolder);
-                AsCollection = isFolder;
+                if (hostRegex.IsMatch(absUri)) { fileName = absUri; }
+                else
+                {
+                    string fname = GetFileName(absUri);
+                    string dirUri = GetDirectoryName(absUri);
+                    string tempfname = GetFiles(dirUri, fname, out bool isFolder);
+                    if (tempfname != null) fileName = dirUri + slash + tempfname;
+                    AsCollection = isFolder;
+                }
                 return fileName != null;
             }
-
-            //private string GetNameFromArray(string name, string[] strs)
-            //{
-            //    for(int i = 0; i < strs.Length; i++)
-            //    {
-            //        string comstr = strs[i];
-            //        if(comstr == name || (comstr.Contains(name) && comstr.EndsWith(extend)))
-            //        { return comstr; }
-            //    }
-            //    return null;
-            //}
 
             private void ResetFileTarget()
             {
@@ -1147,45 +1139,6 @@ namespace E.Data
                 }
             }
 
-            //private string[] GetFiles(string dirUri)
-            //{
-            //    if (dirUri == null) return null;
-            //    System.IO.StreamReader streamReader = null;
-            //    System.Net.FtpWebResponse ftpWebResponse = null;
-            //    System.Net.FtpWebRequest ftpWebRequest = null;
-            //    try
-            //    {
-            //        if (!dirUri.EndsWith(slash)) dirUri += slash;
-            //        ftpWebRequest = GetRequest(dirUri, System.Net.WebRequestMethods.Ftp.ListDirectory);
-            //        ftpWebResponse = GetResponse(ftpWebRequest);
-            //        System.IO.Stream responseStream = ftpWebResponse.GetResponseStream();
-            //        streamReader = new System.IO.StreamReader(responseStream, true);
-            //        string line = null;
-            //        List<string> lines = new List<string>();
-            //        while ((line = streamReader.ReadLine()) != null)
-            //        { lines.Add(line); }
-            //        return lines.Count > 0 ? lines.ToArray() : null;
-            //    }
-            //    catch (System.Net.WebException e)
-            //    {
-            //        if (ftpWebResponse == null)
-            //            ftpWebResponse = e.Response as System.Net.FtpWebResponse;
-            //        switch (ftpWebResponse.StatusCode)
-            //        {
-            //            case System.Net.FtpStatusCode.ActionNotTakenFileUnavailable:
-            //            case System.Net.FtpStatusCode.ActionNotTakenFileUnavailableOrBusy:
-            //                return null;
-            //            default: throw new System.IO.IOException("get files faild." + Environment.NewLine + e.Message + Environment.NewLine + e.StackTrace);
-            //        }
-            //    }
-            //    finally
-            //    {
-            //        streamReader?.Dispose();
-            //        ftpWebResponse?.Dispose();
-            //        ftpWebRequest?.Abort();
-            //    }
-            //}
-
             private bool CreateFile(string fileUri)
             {
                 if (fileUri == null) return false;
@@ -1217,8 +1170,6 @@ namespace E.Data
                     ftpWebRequest?.Abort();
                 }
             }
-
-            private static readonly Regex hostRegex = new Regex(@"^(?:ftp://[^/\\]+)$");
 
             private bool CreateDir(string dirUri)
             {
@@ -1408,7 +1359,7 @@ namespace E.Data
 
             public override SortedList<string, FileSystemEntry> GetFileSystemEntries(bool topOnly)
             {
-                if (AsCollection) return null;
+                if (!AsCollection) return null;
                 SortedList<string, FileSystemEntry> result = null;
                 GetFileSystemEntries0(ref result, FileName, topOnly);
                 return result;

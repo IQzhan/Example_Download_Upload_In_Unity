@@ -52,12 +52,13 @@
                     }
                     void cleanTask()
                     {
+                        asyncOperation.Close();
                         targetStream?.Dispose();
                         targetStream = null;
                         commandHandler?.AddCommand(() =>
                         { asyncOperation.onClose?.Invoke(); });
                     }
-                    taskHandler.AddTask(asyncOperation, taskAction, cleanTask);
+                    taskHandler.AddTask(taskAction, cleanTask);
                 });
             }
             return asyncOperation;

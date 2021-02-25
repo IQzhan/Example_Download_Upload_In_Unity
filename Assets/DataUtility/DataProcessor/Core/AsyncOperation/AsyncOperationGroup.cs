@@ -4,12 +4,14 @@
     {
         protected AsyncOperationGroup() { }
 
-        public int TotalTasks { get; protected set; }
+        public int TotalTasks { get; }
 
-        public int SuccessfulTasks { get; protected set; }
+        public int SuccessfulTasks { get; }
 
-        public int CompletedTasks { get; protected set; }
+        public int FaildTasks { get; }
 
-        public override double Progress => (double)SuccessfulTasks / TotalTasks;
+        public int CompletedTasks { get { return SuccessfulTasks + FaildTasks; } }
+
+        public override double Progress { get; }
     }
 }
