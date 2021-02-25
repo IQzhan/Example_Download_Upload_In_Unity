@@ -8,8 +8,10 @@ namespace E.Data
 
         public AsyncOperationGroup StartAsyncOperationGroup()
         {
-            asyncOperationGroup = new AsyncOperationGroupImplement();
-            asyncOperationGroup.IsWorking = true;
+            asyncOperationGroup = new AsyncOperationGroupImplement
+            {
+                IsWorking = true
+            };
             return asyncOperationGroup;
         }
 
@@ -29,19 +31,13 @@ namespace E.Data
         {
             public new bool IsWorking { get { return base.IsWorking; } set { base.IsWorking = value; } }
 
-            public new int TotalTasks { get { return list == null ? 0 : list.Count; } }
+            public override int TotalTasks => list == null ? 0 : list.Count;
 
-            public new int SuccessfulTasks { get { return base.SuccessfulTasks; } }
+            public override int SuccessfulTasks => GetSuccessfulTasks();
 
-            public new int FaildTasks { get { return base.FaildTasks; } }
+            public override int FaildTasks => GetFaildTasks();
 
-            public new double Progress { get { return base.Progress; } }
-
-            private int totalTasks;
-
-            private int successfulTasks;
-
-            private int completedTasks;
+            public override double Progress => GetProgress();
 
             private int GetSuccessfulTasks()
             {
@@ -67,6 +63,7 @@ namespace E.Data
                     {
                         faildCount += list[i].IsError ? 1 : 0;
                     }
+                    if (faildCount > 0) IsError = true;
                 }
                 return 0;
             }

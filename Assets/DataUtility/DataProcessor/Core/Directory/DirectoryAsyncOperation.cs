@@ -2,14 +2,8 @@
 
 namespace E.Data
 {
-    public class DirectoryAsyncOperation : ConnectionAsyncOperation
+    public abstract class DirectoryAsyncOperation : ConnectionAsyncOperation
     {
-        protected DirectoryAsyncOperation() { }
-
-        protected double progress;
-        
-        public override double Progress => progress;
-
         public SortedList<string, FileSystemEntry> Entries { get; protected set; }
     }
 }

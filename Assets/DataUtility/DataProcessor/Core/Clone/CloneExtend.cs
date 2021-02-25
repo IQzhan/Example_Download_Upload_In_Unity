@@ -14,6 +14,7 @@
                     throw new System.ArgumentException("must be absolute uri", "target");
                 targetStream = streamFactory.GetStream(target);
                 asyncOperation = new CloneAsyncOperationImplement();
+                TryAddAsyncOperation(asyncOperation);
                 return true;
             }
             catch (System.Exception e)
@@ -35,6 +36,7 @@
                     throw new System.ArgumentException("must be absolute uri", "target");
                 targetStream = streamFactory.GetStream(target);
                 asyncOperation = new CloneAsyncOperationImplement();
+                TryAddAsyncOperation(asyncOperation);
                 return true;
             }
             catch (System.Exception e)
@@ -61,6 +63,7 @@
                     targetStream = streamFactory.GetStream(target);
                 }
                 asyncOperation = new CloneAsyncOperationImplement();
+                TryAddAsyncOperation(asyncOperation);
                 return true;
             }
             catch (System.Exception e)

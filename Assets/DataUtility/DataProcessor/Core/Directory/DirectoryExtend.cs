@@ -14,6 +14,7 @@ namespace E.Data
                     throw new System.ArgumentException("must be absolute uri", "target");
                 targetStream = streamFactory.GetStream(target);
                 asyncOperation = new DirectoryAsyncOperationImplement();
+                TryAddAsyncOperation(asyncOperation);
             }
             catch (System.Exception e)
             {
@@ -29,7 +30,9 @@ namespace E.Data
 
             public new bool IsError { get { return base.IsError; } set { base.IsError = value; } }
 
-            public new double Progress { get { return base.progress; } set { base.progress = value; } }
+            public double progress;
+
+            public override double Progress { get { return progress; } }
 
             public new SortedList<string, FileSystemEntry> Entries { get { return base.Entries; } set { base.Entries = value; } }
         }

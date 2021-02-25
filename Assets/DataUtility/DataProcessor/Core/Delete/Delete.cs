@@ -32,16 +32,16 @@
                             targetStream.SetAccount(asyncOperation.targetAccount.username, asyncOperation.targetAccount.password);
                             if (asyncOperation.IsClosed) return;
                             if (targetStream.TestConnection(asyncOperation.ForceTestConnection))
-                            { asyncOperation.Progress = 0.1f; }
+                            { asyncOperation.progress = 0.1f; }
                             else throw new System.Exception(@"connecting faild.");
                             if (targetStream.Exists)
                             {
                                 if (asyncOperation.IsClosed) return;
                                 if (targetStream.Delete())
-                                { asyncOperation.Progress = 1; }
+                                { asyncOperation.progress = 1; }
                                 else { throw new System.Exception(@"delete faild."); }
                             }
-                            else { asyncOperation.Progress = 1; }
+                            else { asyncOperation.progress = 1; }
                         }
                         catch (System.Exception e)
                         {

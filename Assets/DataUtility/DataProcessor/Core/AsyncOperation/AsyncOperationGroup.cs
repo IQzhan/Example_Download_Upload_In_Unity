@@ -1,17 +1,27 @@
 ﻿namespace E.Data
 {
-    public class AsyncOperationGroup : AsyncOperation
+    public abstract class AsyncOperationGroup : AsyncOperation
     {
         protected AsyncOperationGroup() { }
 
-        public int TotalTasks { get; }
+        /// <summary>
+        /// total number of tasks
+        /// </summary>
+        public abstract int TotalTasks { get; }
 
-        public int SuccessfulTasks { get; }
+        /// <summary>
+        /// successful tasks
+        /// </summary>
+        public abstract int SuccessfulTasks { get; }
 
-        public int FaildTasks { get; }
+        /// <summary>
+        /// woring faild tasks
+        /// </summary>
+        public abstract int FaildTasks { get; }
 
+        /// <summary>
+        /// 
+        /// </summary>
         public int CompletedTasks { get { return SuccessfulTasks + FaildTasks; } }
-
-        public override double Progress { get; }
     }
 }

@@ -32,7 +32,7 @@ namespace E.Data
                     targetStream.AsCollection = true;
                     if (asyncOperation.IsClosed) return;
                     if (targetStream.TestConnection(asyncOperation.ForceTestConnection))
-                    { asyncOperation.Progress = 0.1f; }
+                    { asyncOperation.progress = 0.1f; }
                     else throw new System.Exception(@"connecting faild.");
                     bool targetExists = targetStream.Exists;
                     if (targetExists)
@@ -40,7 +40,7 @@ namespace E.Data
                         asyncOperation.Entries = targetStream.GetFileSystemEntries(topOnly);
                         if(asyncOperation.Entries == null)
                         { throw new System.Exception("GetFileSystemEntries faild."); }
-                        asyncOperation.Progress = 1;
+                        asyncOperation.progress = 1;
                     }
                     else
                     { throw new System.IO.DirectoryNotFoundException("not exists."); }

@@ -1,9 +1,7 @@
 ﻿namespace E.Data
 {
-    public class CloneAsyncOperation : ConnectionAsyncOperation
+    public abstract class CloneAsyncOperation : ConnectionAsyncOperation
     {
-        protected CloneAsyncOperation() { }
-
         /// <summary>
         /// load data while downloading?
         /// </summary>

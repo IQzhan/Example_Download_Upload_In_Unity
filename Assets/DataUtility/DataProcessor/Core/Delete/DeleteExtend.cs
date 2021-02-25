@@ -12,6 +12,7 @@
                     throw new System.ArgumentException("must be absolute uri", "target");
                 targetStream = streamFactory.GetStream(target);
                 asyncOperation = new DeleteAsyncOperationImplement();
+                TryAddAsyncOperation(asyncOperation);
             }
             catch (System.Exception e)
             {
@@ -23,7 +24,9 @@
 
         private class DeleteAsyncOperationImplement : DeleteAsyncOperation
         {
-            public new double Progress { get { return base.Progress; } set { progress = value; } }
+            public double progress;
+
+            public override double Progress => progress;
 
             public new bool IsWorking { get { return base.IsWorking; } set { base.IsWorking = value; } }
 
