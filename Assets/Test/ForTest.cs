@@ -7,6 +7,7 @@ using System.IO;
 using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Xml;
 using UnityEngine;
 
@@ -237,27 +238,27 @@ namespace E
 
             //TODO group
             //test from http to local
-            string httpUri0 = "http://localhost:4322/Downloads/TestFile0.iso";
-            string httpUri1 = "http://localhost:4322/Downloads/TestFile1.iso";
-            string localUri0 = "F:/Downloads/TestFile0.iso";
-            string localUri1 = "F:/Downloads/TestFile1.iso";
+            string httpUri0 = "http://localhost:4322/Downloads/jdk-8u271-windows-x64.exe";
+            string localUri0 = "F:/Downloads/TestFile0.exe";
+            string localUri1 = "F:/Downloads/TestFile1.exe";
+            string localUri2 = "F:/Downloads/TestFile2.exe";
+            string localUri3 = "F:/Downloads/TestFile3.exe";
+            string localUri4 = "F:/Downloads/TestFile4.exe";
+            string localUri5 = "F:/Downloads/TestFile5.exe";
 
             asyncOperationGroup = dataProcessor.StartAsyncOperationGroup();
             dataProcessor.Clone(httpUri0, localUri0).LoadData = false;
-            dataProcessor.Clone(httpUri1, localUri1).LoadData = false;
-
+            dataProcessor.Clone(httpUri0, localUri1).LoadData = false;
+            dataProcessor.Clone(httpUri0, localUri2).LoadData = false;
+            dataProcessor.Clone(httpUri0, localUri3).LoadData = false;
+            dataProcessor.Clone(httpUri0, localUri4).LoadData = false;
+            dataProcessor.Clone(httpUri0, localUri5).LoadData = false;
             dataProcessor.EndAsyncOperationGroup();
-
 
             //TODO encode and decode
 
             //TODO android
 
-            //Debug.LogError(Refresh("http://localhost:4322/Downloads"));
-
-            //DeleteDir("ftp://localhost/suckmydick/新建文件夹/");
-
-            
 
         }
 

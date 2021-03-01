@@ -1,9 +1,12 @@
-﻿using System.Threading.Tasks;
+﻿using System.Threading;
+using System.Threading.Tasks;
 
 namespace E.Data
 {
     public class StandloneTaskHandler : TaskHandler
     {
+        static StandloneTaskHandler() { }
+
         protected StandloneTaskHandler() { }
 
         private class DataTask : ITask
@@ -19,7 +22,7 @@ namespace E.Data
                 {
                     try { bodyAction(); }
                     catch (System.Exception e)
-                    { DataProcessorDebug.LogException(e); }
+                    { if( !(e.InnerException is ThreadAbortException)) DataProcessorDebug.LogException(e); }
                     finally
                     {
                         try { cleanAction(); }

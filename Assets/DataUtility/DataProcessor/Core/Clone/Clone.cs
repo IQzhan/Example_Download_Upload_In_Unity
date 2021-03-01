@@ -61,8 +61,7 @@
                         catch (System.Exception e)
                         {
                             asyncOperation.IsError = true;
-                            DataProcessorDebug.LogError("cause an error while clone from System.IO.Stream to " + targetStream.uri
-                                + System.Environment.NewLine + e.Message + System.Environment.NewLine + e.StackTrace);
+                            throw new System.Exception("cause an error while clone from System.IO.Stream to " + targetStream?.uri, e);
                         }
                     }
                     void cleanTask()
@@ -138,8 +137,7 @@
                         catch (System.Exception e)
                         {
                             asyncOperation.IsError = true;
-                            DataProcessorDebug.LogError("cause an error while clone from byte[] to " + targetStream.uri 
-                                + System.Environment.NewLine + e.Message + System.Environment.NewLine + e.StackTrace);
+                            throw new System.Exception("cause an error while clone from byte[] to " + targetStream?.uri, e);
                         }
                     }
                     void cleanTask()
@@ -303,13 +301,9 @@
                         {
                             asyncOperation.IsError = true;
                             data = null;
-                            DataProcessorDebug.LogError("cause an error while clone from " + sourceStream.uri + " to " + targetStream.uri
-                                + System.Environment.NewLine + e.Message + System.Environment.NewLine + e.StackTrace);
+                            throw new System.Exception("cause an error while clone from " + sourceStream?.uri + " to " + targetStream?.uri, e);
                         }
-                        finally
-                        {
-                            asyncOperation.Data = data;
-                        }
+                        finally { asyncOperation.Data = data; }
                     }
                     void cleanTask()
                     {

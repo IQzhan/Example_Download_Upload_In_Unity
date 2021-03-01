@@ -7,7 +7,10 @@ namespace E.Data
 {
     public class StandaloneStreamFactory : DataStreamFactory
     {
-        protected StandaloneStreamFactory() { }
+        protected StandaloneStreamFactory() 
+        {
+            System.Net.ServicePointManager.DefaultConnectionLimit = 512;
+        }
 
         public override DataStream GetStream(in Uri uri)
         {
