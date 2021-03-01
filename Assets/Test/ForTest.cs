@@ -234,26 +234,46 @@ namespace E
             //});
 
             //TODO Compare
+            string sourceUri = "http://localhost:4322/StreamingAssets";
+            string targetUri = "F:/Downloads/StreamingAssets/";
+            Regex matchRegex = new Regex(@"StreamingAssets[/\\](.+)");
+            DirectoryAsyncOperation directoryAsyncOperation = dataProcessor.GetFileSystemEntries(sourceUri);
+            directoryAsyncOperation.onClose += () =>
+            {
+                if (directoryAsyncOperation.IsProcessingComplete)
+                {
+                    AsyncOperationGroup asyncOperationGroup = dataProcessor.StartAsyncOperationGroup();
+                    asyncOperationGroup.onClose += () =>
+                    {
+                        Debug.LogError("End");
 
+                    };
+                    foreach (KeyValuePair<string, FileSystemEntry> kv 
+                    in directoryAsyncOperation.Entries)
+                    {
+                        dataProcessor.Clone(kv.Key, targetUri + matchRegex.Match(kv.Key).Groups[1].Value).LoadData = false;
+                    }
+                    dataProcessor.EndAsyncOperationGroup();
+                }
+            };
 
             //TODO group
             //test from http to local
-            string httpUri0 = "http://localhost:4322/Downloads/jdk-8u271-windows-x64.exe";
-            string localUri0 = "F:/Downloads/TestFile0.exe";
-            string localUri1 = "F:/Downloads/TestFile1.exe";
-            string localUri2 = "F:/Downloads/TestFile2.exe";
-            string localUri3 = "F:/Downloads/TestFile3.exe";
-            string localUri4 = "F:/Downloads/TestFile4.exe";
-            string localUri5 = "F:/Downloads/TestFile5.exe";
-
-            asyncOperationGroup = dataProcessor.StartAsyncOperationGroup();
-            dataProcessor.Clone(httpUri0, localUri0).LoadData = false;
-            dataProcessor.Clone(httpUri0, localUri1).LoadData = false;
-            dataProcessor.Clone(httpUri0, localUri2).LoadData = false;
-            dataProcessor.Clone(httpUri0, localUri3).LoadData = false;
-            dataProcessor.Clone(httpUri0, localUri4).LoadData = false;
-            dataProcessor.Clone(httpUri0, localUri5).LoadData = false;
-            dataProcessor.EndAsyncOperationGroup();
+            //string httpUri0 = "http://localhost:4322/Downloads/jdk-8u271-windows-x64.exe";
+            //string localUri0 = "F:/Downloads/TestFile0.exe";
+            //string localUri1 = "F:/Downloads/TestFile1.exe";
+            //string localUri2 = "F:/Downloads/TestFile2.exe";
+            //string localUri3 = "F:/Downloads/TestFile3.exe";
+            //string localUri4 = "F:/Downloads/TestFile4.exe";
+            //string localUri5 = "F:/Downloads/TestFile5.exe";
+            //asyncOperationGroup = dataProcessor.StartAsyncOperationGroup();
+            //dataProcessor.Clone(httpUri0, localUri0).LoadData = false;
+            //dataProcessor.Clone(httpUri0, localUri1).LoadData = false;
+            //dataProcessor.Clone(httpUri0, localUri2).LoadData = false;
+            //dataProcessor.Clone(httpUri0, localUri3).LoadData = false;
+            //dataProcessor.Clone(httpUri0, localUri4).LoadData = false;
+            //dataProcessor.Clone(httpUri0, localUri5).LoadData = false;
+            //dataProcessor.EndAsyncOperationGroup();
 
             //TODO encode and decode
 
