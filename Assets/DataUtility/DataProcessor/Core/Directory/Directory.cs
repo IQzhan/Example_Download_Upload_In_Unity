@@ -48,8 +48,7 @@ namespace E.Data
                 catch(System.Exception e)
                 {
                     asyncOperation.IsError = true;
-                    DataProcessorDebug.LogError("cause an error while try list directory with " + targetStream.uri
-                        + System.Environment.NewLine + e.Message + System.Environment.NewLine + e.StackTrace);
+                    throw new System.Exception("cause an error while try list directory with " + targetStream?.uri, e);
                 }
             }
             void cleanAction()
