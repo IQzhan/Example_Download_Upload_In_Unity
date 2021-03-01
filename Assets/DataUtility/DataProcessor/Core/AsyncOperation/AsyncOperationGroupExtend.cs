@@ -9,19 +9,14 @@ namespace E.Data
         public AsyncOperationGroup StartAsyncOperationGroup()
         {
             asyncOperationGroup = new AsyncOperationGroupImplement
-            {
-                IsWorking = true
-            };
+            { IsWorking = true };
             return asyncOperationGroup;
         }
 
         public void EndAsyncOperationGroup()
-        {
-            asyncOperationGroup.Close();
-            asyncOperationGroup = null;
-        }
+        { asyncOperationGroup = null; }
 
-        private void TryAddAsyncOperation(AsyncOperation asyncOperation)
+        private void TryAddAsyncOperation(in AsyncOperation asyncOperation)
         {
             if(asyncOperationGroup != null)
             { asyncOperationGroup.AddAsyncOperation(asyncOperation); }
@@ -46,9 +41,8 @@ namespace E.Data
                     int count = list.Count;
                     int successCount = 0;
                     for (int i = 0; i < count; i++)
-                    {
-                        successCount += list[i].IsProcessingComplete ? 1 : 0;
-                    }
+                    { successCount += list[i].IsProcessingComplete ? 1 : 0; }
+                    return successCount;
                 }
                 return 0;
             }
@@ -60,10 +54,9 @@ namespace E.Data
                     int count = list.Count;
                     int faildCount = 0;
                     for (int i = 0; i < count; i++)
-                    {
-                        faildCount += list[i].IsError ? 1 : 0;
-                    }
+                    { faildCount += list[i].IsError ? 1 : 0; }
                     if (faildCount > 0) IsError = true;
+                    return faildCount;
                 }
                 return 0;
             }
@@ -75,9 +68,7 @@ namespace E.Data
                     int count = list.Count;
                     double total = 0;
                     for(int i = 0; i < count; i++)
-                    {
-                        total += list[i].Progress;
-                    }
+                    { total += list[i].Progress; }
                     return total / count;
                 }
                 return 0;

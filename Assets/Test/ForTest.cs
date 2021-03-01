@@ -37,6 +37,7 @@ namespace E
         private CloneAsyncOperation cloneAsyncOperation;
         private DeleteAsyncOperation deleteAsyncOperation;
         private DirectoryAsyncOperation directoryAsyncOperation;
+        private AsyncOperationGroup asyncOperationGroup;
 
         private void Awake()
         {
@@ -58,34 +59,57 @@ namespace E
             if (cloneAsyncOperation != null && cloneAsyncOperation.Size > 0)
             {
                 sb.Append("clone:");
-                sb.Append("progress: ");
+                sb.Append(System.Environment.NewLine);
+                sb.Append("    progress: ");
                 sb.Append(cloneAsyncOperation.Progress);
                 sb.Append(System.Environment.NewLine);
-                sb.Append("speed: ");
+                sb.Append("    speed: ");
                 sb.Append(Utility.FormatDataSize(cloneAsyncOperation.Speed, "<n><u>/s"));
                 sb.Append(System.Environment.NewLine);
-                sb.Append("reamain time: ");
+                sb.Append("    reamain time: ");
                 sb.Append(cloneAsyncOperation.RemainingTime);
                 sb.Append(System.Environment.NewLine);
-                sb.Append("size: ");
+                sb.Append("    size: ");
                 sb.Append(Utility.FormatDataSize(cloneAsyncOperation.Size));
                 sb.Append(System.Environment.NewLine);
-                sb.Append("processed size: ");
+                sb.Append("    processed size: ");
                 sb.Append(Utility.FormatDataSize(cloneAsyncOperation.ProcessedBytes));
                 sb.Append(System.Environment.NewLine);
             }
             if (deleteAsyncOperation != null)
             {
                 sb.Append("delete:");
-                sb.Append("progress: ");
+                sb.Append(System.Environment.NewLine);
+                sb.Append("    progress: ");
                 sb.Append(deleteAsyncOperation.Progress);
                 sb.Append(System.Environment.NewLine);
             }
             if(directoryAsyncOperation != null)
             {
-                sb.Append("directory");
-                sb.Append("progress: ");
+                sb.Append("directory:");
+                sb.Append(System.Environment.NewLine);
+                sb.Append("    progress: ");
                 sb.Append(directoryAsyncOperation.Progress);
+                sb.Append(System.Environment.NewLine);
+            }
+            if(asyncOperationGroup != null)
+            {
+                sb.Append("Group:");
+                sb.Append(System.Environment.NewLine);
+                sb.Append("    progress: ");
+                sb.Append(asyncOperationGroup.Progress);
+                sb.Append(System.Environment.NewLine);
+                sb.Append("    totalTasks: ");
+                sb.Append(asyncOperationGroup.TotalTasks);
+                sb.Append(System.Environment.NewLine);
+                sb.Append("    successfulTasks: ");
+                sb.Append(asyncOperationGroup.SuccessfulTasks);
+                sb.Append(System.Environment.NewLine);
+                sb.Append("    faildTasks: ");
+                sb.Append(asyncOperationGroup.FaildTasks);
+                sb.Append(System.Environment.NewLine);
+                sb.Append("    completedTasks: ");
+                sb.Append(asyncOperationGroup.CompletedTasks);
                 sb.Append(System.Environment.NewLine);
             }
             OverridePrint(sb.ToString());
@@ -210,7 +234,20 @@ namespace E
 
             //TODO Compare
 
+
             //TODO group
+            //test from http to local
+            string httpUri0 = "http://localhost:4322/Downloads/TestFile0.iso";
+            string httpUri1 = "http://localhost:4322/Downloads/TestFile1.iso";
+            string localUri0 = "F:/Downloads/TestFile0.iso";
+            string localUri1 = "F:/Downloads/TestFile1.iso";
+
+            asyncOperationGroup = dataProcessor.StartAsyncOperationGroup();
+            dataProcessor.Clone(httpUri0, localUri0).LoadData = false;
+            dataProcessor.Clone(httpUri1, localUri1).LoadData = false;
+
+            dataProcessor.EndAsyncOperationGroup();
+
 
             //TODO encode and decode
 

@@ -15,12 +15,12 @@
         public abstract int SuccessfulTasks { get; }
 
         /// <summary>
-        /// woring faild tasks
+        /// faild tasks
         /// </summary>
         public abstract int FaildTasks { get; }
 
         /// <summary>
-        /// 
+        /// SuccessfulTasks + FaildTasks
         /// </summary>
         public int CompletedTasks { get { return SuccessfulTasks + FaildTasks; } }
     }

@@ -3,7 +3,7 @@
     public abstract class CloneAsyncOperation : ConnectionAsyncOperation
     {
         /// <summary>
-        /// load data while downloading?
+        /// load data while downloading? true default.
         /// </summary>
         public bool LoadData
         {
