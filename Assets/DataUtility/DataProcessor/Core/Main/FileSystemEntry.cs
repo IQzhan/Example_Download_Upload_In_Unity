@@ -12,6 +12,6 @@ namespace E.Data
         public bool isFolder;
         public DateTime lastModified;
         public override string ToString()
-        { return "uri: " + uri + ", name: " + name + (isFolder ? ", type: folder" : ", type: file") + ", lastModified: " + lastModified; }
+        { return "{\"uri\": " + uri + ", \"name\": " + name + (isFolder ? ", \"type\": folder" : ", \"type\": file") + ", \"lastModified\": " + lastModified + "}"; }
     }
 }

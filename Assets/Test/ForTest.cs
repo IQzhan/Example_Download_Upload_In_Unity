@@ -39,6 +39,7 @@ namespace E
         private DeleteAsyncOperation deleteAsyncOperation;
         private DirectoryAsyncOperation directoryAsyncOperation;
         private AsyncOperationGroup asyncOperationGroup;
+        private AsyncOperationGroup compareOperation;
 
         private void Awake()
         {
@@ -111,6 +112,26 @@ namespace E
                 sb.Append(System.Environment.NewLine);
                 sb.Append("    completedTasks: ");
                 sb.Append(asyncOperationGroup.CompletedTasks);
+                sb.Append(System.Environment.NewLine);
+            }
+            if (compareOperation != null)
+            {
+                sb.Append("compare:");
+                sb.Append(System.Environment.NewLine);
+                sb.Append("    progress: ");
+                sb.Append(compareOperation.Progress);
+                sb.Append(System.Environment.NewLine);
+                sb.Append("    totalTasks: ");
+                sb.Append(compareOperation.TotalTasks);
+                sb.Append(System.Environment.NewLine);
+                sb.Append("    successfulTasks: ");
+                sb.Append(compareOperation.SuccessfulTasks);
+                sb.Append(System.Environment.NewLine);
+                sb.Append("    faildTasks: ");
+                sb.Append(compareOperation.FaildTasks);
+                sb.Append(System.Environment.NewLine);
+                sb.Append("    completedTasks: ");
+                sb.Append(compareOperation.CompletedTasks);
                 sb.Append(System.Environment.NewLine);
             }
             OverridePrint(sb.ToString());
@@ -242,16 +263,21 @@ namespace E
             {
                 if (directoryAsyncOperation.IsProcessingComplete)
                 {
-                    AsyncOperationGroup asyncOperationGroup = dataProcessor.StartAsyncOperationGroup();
-                    asyncOperationGroup.onClose += () =>
+                    compareOperation = dataProcessor.StartAsyncOperationGroup();
+                    compareOperation.onClose += () =>
                     {
                         Debug.LogError("End");
-
                     };
-                    foreach (KeyValuePair<string, FileSystemEntry> kv 
+                    foreach (KeyValuePair<string, FileSystemEntry> kv
                     in directoryAsyncOperation.Entries)
                     {
-                        dataProcessor.Clone(kv.Key, targetUri + matchRegex.Match(kv.Key).Groups[1].Value).LoadData = false;
+                        FileSystemEntry fsn = kv.Value;
+                        if (!fsn.isFolder)
+                        {
+                            string partPath = matchRegex.Match(kv.Key).Groups[1].Value;
+                            string targetPath = targetUri + partPath;
+                            dataProcessor.Clone(fsn.uri, targetPath).LoadData = false;
+                        }
                     }
                     dataProcessor.EndAsyncOperationGroup();
                 }

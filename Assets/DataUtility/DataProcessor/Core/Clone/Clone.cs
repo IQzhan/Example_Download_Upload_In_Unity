@@ -61,7 +61,9 @@
                         catch (System.Exception e)
                         {
                             asyncOperation.IsError = true;
-                            throw new System.Exception("cause an error while clone from System.IO.Stream to " + targetStream?.uri, e);
+                            DataProcessorDebug.LogError("cause an error while clone from System.IO.Stream to " + targetStream?.uri
+                                + System.Environment.NewLine + e.Message + e.StackTrace);
+                            throw e;
                         }
                     }
                     void cleanTask()
@@ -137,7 +139,9 @@
                         catch (System.Exception e)
                         {
                             asyncOperation.IsError = true;
-                            throw new System.Exception("cause an error while clone from byte[] to " + targetStream?.uri, e);
+                            DataProcessorDebug.LogError("cause an error while clone from byte[] to " + targetStream?.uri
+                                + System.Environment.NewLine + e.Message + e.StackTrace);
+                            throw e;
                         }
                     }
                     void cleanTask()
@@ -301,7 +305,9 @@
                         {
                             asyncOperation.IsError = true;
                             data = null;
-                            throw new System.Exception("cause an error while clone from " + sourceStream?.uri + " to " + targetStream?.uri, e);
+                            DataProcessorDebug.LogError("cause an error while clone from " + sourceStream?.uri + " to " + targetStream?.uri
+                                + System.Environment.NewLine + e.Message + e.StackTrace);
+                            throw e;
                         }
                         finally { asyncOperation.Data = data; }
                     }

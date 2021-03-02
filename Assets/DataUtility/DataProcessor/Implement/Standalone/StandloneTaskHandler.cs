@@ -21,6 +21,7 @@ namespace E.Data
                 task = Task.Run(() =>
                 {
                     try { bodyAction(); }
+                    catch (ThreadAbortException) { }
                     catch (System.Exception e)
                     { if( !(e.InnerException is ThreadAbortException)) DataProcessorDebug.LogException(e); }
                     finally

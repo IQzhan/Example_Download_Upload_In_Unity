@@ -163,7 +163,7 @@ namespace E.Data
                         if (fn != null)
                         {
                             if (fn.EndsWith(extend))
-                            { fileInfo.MoveTo(uri.LocalPath + value.Ticks.ToString() + extend); }
+                            { fileInfo.MoveTo(uri.LocalPath + "." + value.Ticks.ToString() + extend); }
                             fileInfo.LastWriteTime = value;
                         }
                     }
