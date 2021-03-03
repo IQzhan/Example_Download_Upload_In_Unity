@@ -73,6 +73,10 @@ namespace E.Data
             private string FileName
             { get { if(fileName == null) { RefreshFileName(); } return fileName; } }
 
+            int setCount1 = 0;
+
+            string strbbs = null;
+
             private bool RefreshFileName()
             {
                 ResetFileTarget();
@@ -89,7 +93,11 @@ namespace E.Data
                     string[] fileNames = System.IO.Directory.GetFiles
                         (dir, name + ".*.downloading", System.IO.SearchOption.TopDirectoryOnly);
                     if (fileNames.Length > 0)
-                    { fileName = fileNames[0]; fileInfo = null; fileInfo = new System.IO.FileInfo(fileName); AsCollection = false; }
+                    {
+                        setCount1++;
+                        strbbs = fileNames.Length.ToString();
+                        fileName = fileNames[0]; fileInfo = null; fileInfo = new System.IO.FileInfo(fileName); AsCollection = false; 
+                    }
                 }
                 return fileName != null;
             }
@@ -193,6 +201,7 @@ namespace E.Data
 
             public override bool Create()
             {
+                bool result = false;
                 if (!AsCollection)
                 {
                     System.DateTime lasttime = LastModified;
@@ -201,9 +210,16 @@ namespace E.Data
                         string localPath = uri.LocalPath;
                         string dir = GetDirectoryName(localPath);
                         if (!System.IO.Directory.Exists(dir)) { System.IO.Directory.CreateDirectory(dir); }
+                        
                         System.IO.File.Create(localPath + "." + lasttime.Ticks.ToString() + extend).Dispose();
                         ResetFileTarget();
-                        return true;
+                        result = true;
+                    }
+                    else
+                    {
+                        //if works here then print rested times an get times
+
+                        DataProcessorDebug.Log("create fff " + strbbs + " " + setCount1 + " " + fileName + " " + System.IO.File.Exists(fileName));
                     }
                 }
                 else
@@ -211,9 +227,9 @@ namespace E.Data
                     string localPath = uri.LocalPath;
                     System.IO.Directory.CreateDirectory(localPath);
                     ResetFileTarget();
-                    return true;
+                    result = true;
                 }
-                return false;
+                return result;
             }
 
             private long position;

@@ -237,14 +237,17 @@
                             {
                                 if (asyncOperation.IsClosed) return;
                                 if (!targetStream.Delete()) throw new System.IO.IOException("delete target faild.");
-                                targetExists = false; 
+                                targetExists = false;
                             }
                             if (targetAllowed && sourceExists && targetStream != null && !targetExists)
                             {
                                 if (asyncOperation.IsClosed) return;
                                 targetStream.LastModified = sourceStream.LastModified;
                                 if (asyncOperation.IsClosed) return;
-                                if (!targetStream.Create()) throw new System.IO.IOException("create target faild.");
+                                if (!targetStream.Create()) 
+                                {
+                                    throw new System.IO.IOException("create target faild."); 
+                                }
                                 targetExists = true;
                             }
                             if (asyncOperation.IsClosed) return;

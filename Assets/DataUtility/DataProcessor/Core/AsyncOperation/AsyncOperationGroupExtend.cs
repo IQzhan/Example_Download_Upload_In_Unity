@@ -10,6 +10,9 @@ namespace E.Data
         {
             asyncOperationGroup = new AsyncOperationGroupImplement
             { IsWorking = true };
+            commandHandler.AddCommand(() =>
+            { asyncOperationGroup?.Close(); asyncOperationGroup?.onClose?.Invoke(); }, 
+            () => { return asyncOperationGroup.IsProcessingComplete; });
             return asyncOperationGroup;
         }
 
