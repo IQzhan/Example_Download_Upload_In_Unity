@@ -1,7 +1,6 @@
 ﻿namespace E.Data
 {
-    public abstract class CloneDirectoryAsyncOperation : ConnectionAsyncOperation
+    public abstract class CloneDirectoryAsyncOperation : ProcessAsyncOperation
     {
-
     }
 }

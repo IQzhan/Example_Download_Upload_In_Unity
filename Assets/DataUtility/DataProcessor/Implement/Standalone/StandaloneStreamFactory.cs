@@ -333,12 +333,19 @@ namespace E.Data
                         string entry = entries[i];
                         string name = GetFileName(entry);
                         bool isFolder = System.IO.Directory.Exists(entry);
+                        System.IO.DirectoryInfo df = null;
+                        System.IO.FileInfo ff = null;
+                        if (isFolder)
+                        { df = new System.IO.DirectoryInfo(entry); }
+                        else
+                        { ff = new System.IO.FileInfo(entry); }
                         infos[entry] = new FileSystemEntry()
                         {
                             uri = entry,
                             name = name,
                             isFolder = isFolder,
-                            lastModified = System.IO.Directory.GetLastWriteTime(entry)
+                            size = isFolder ? 0 : ff.Length,
+                            lastModified = isFolder ? df.LastWriteTime : ff.LastWriteTime
                         };
                     }
                     return infos;
@@ -703,12 +710,14 @@ namespace E.Data
                                 string mUri = groupCollection[1].Value;
                                 string mLastModified = groupCollection[2].Value;
                                 string mName = groupCollection[3].Value;
-                                string mIsFolder = groupCollection[4].Value;
+                                string mLength = groupCollection[4].Value;
+                                string mIsFolder = groupCollection[5].Value;
                                 resourceList.Add(mUri, new FileSystemEntry
                                 {
                                     uri = mUri,
                                     name = mName,
                                     isFolder = Convert.ToBoolean(Convert.ToInt32(mIsFolder)),
+                                    size = long.Parse(mLength),
                                     lastModified = Convert.ToDateTime(mLastModified)
                                 });
                             }
@@ -729,6 +738,7 @@ namespace E.Data
                     "<a:prop>" +
                     "<a:displayname/>" +
                     "<a:iscollection/>" +
+                    "<a:getcontentlength/>" +
                     "<a:getlastmodified/>" +
                     "</a:prop>" +
                     "</a:propfind>";
@@ -736,7 +746,7 @@ namespace E.Data
                     RequestBytes = System.Text.Encoding.ASCII.GetBytes(RequestString);
                 }
 
-                public static Regex XmlFormatRegex = new Regex(@"<D:response><D:href>([^<>]+)</D:href><D:propstat><D:status>[^<>]+</D:status><D:prop><D:getlastmodified>([^<>]+)</D:getlastmodified><D:displayname>([^<>]+)</D:displayname><D:iscollection>([01])</D:iscollection></D:prop></D:propstat></D:response>");
+                public static Regex XmlFormatRegex = new Regex(@"<D:response><D:href>([^<>]+)</D:href><D:propstat><D:status>[^<>]+</D:status><D:prop><D:getlastmodified>([^<>]+)</D:getlastmodified><D:displayname>([^<>]+)</D:displayname><D:getcontentlength>([0-9]+)</D:getcontentlength><D:iscollection>([01])</D:iscollection></D:prop></D:propstat></D:response>");
 
                 public static int RequestStringLength;
 
@@ -1421,6 +1431,7 @@ namespace E.Data
                                     uri = mUri,
                                     name = mName,
                                     lastModified = Convert.ToDateTime(mLastModified),
+                                    size = isFolder ? 0 : long.Parse(mMark),
                                     isFolder = isFolder
                                 };
                                 if (isFolder && !topOnly) { GetFileSystemEntries0(ref result, mUri, topOnly); }

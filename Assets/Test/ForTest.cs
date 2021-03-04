@@ -487,18 +487,18 @@ namespace E
 
         //private string password;
 
-        private System.Net.FtpWebRequest GetRequest(string uri, string mathod)
-        {
-            System.Net.FtpWebRequest req = System.Net.WebRequest.Create(uri) as System.Net.FtpWebRequest;
-            req.Method = mathod;
-            req.Credentials = new System.Net.NetworkCredential("admin", "123456");
-            req.KeepAlive = false;
-            req.UsePassive = false;
-            req.UseBinary = true;
-            return req;
-        }
+        //private System.Net.FtpWebRequest GetRequest(string uri, string mathod)
+        //{
+        //    System.Net.FtpWebRequest req = System.Net.WebRequest.Create(uri) as System.Net.FtpWebRequest;
+        //    req.Method = mathod;
+        //    req.Credentials = new System.Net.NetworkCredential("admin", "123456");
+        //    req.KeepAlive = false;
+        //    req.UsePassive = false;
+        //    req.UseBinary = true;
+        //    return req;
+        //}
 
-        private System.Net.FtpWebResponse GetResponse(System.Net.FtpWebRequest request)
-        { return request.GetResponse() as System.Net.FtpWebResponse; }
+        //private System.Net.FtpWebResponse GetResponse(System.Net.FtpWebRequest request)
+        //{ return request.GetResponse() as System.Net.FtpWebResponse; }
     }
 }
