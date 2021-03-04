@@ -295,7 +295,7 @@ namespace E
                 {
                     compareOperation = dataProcessor.StartAsyncOperationGroup();                    
                     compareOperation.onClose += () =>
-                    { Debug.LogError("End..............."); };
+                    { Debug.LogError("End"); };
                     foreach (KeyValuePair<string, FileSystemEntry> kv
                     in directoryAsyncOperation.Entries)
                     {
