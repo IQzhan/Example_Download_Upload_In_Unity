@@ -287,7 +287,6 @@ namespace E
 
         private void CompareClone(string sourceUri, string targetUri, Regex matchRule)
         {
-            dataProcessor.MaxCommandDeltaTick = 0;
             dataProcessor.MaxTaskNum = 1;
             DirectoryAsyncOperation directoryAsyncOperation = dataProcessor.GetFileSystemEntries(sourceUri);
             directoryAsyncOperation.onClose += () =>
@@ -305,7 +304,15 @@ namespace E
                         {
                             string partPath = matchRule.Match(kv.Key).Groups[1].Value;
                             string targetPath = targetUri + partPath;
-                            dataProcessor.Clone(fsn.uri, targetPath).LoadData = false;
+                            CloneAsyncOperation cloneAsync =
+                            dataProcessor.Clone(fsn.uri, targetPath);
+                            cloneAsync.LoadData = false;
+                            cloneAsync.onClose += () => 
+                            {
+                                //continue;
+
+                            };
+                            
                         }
                     }
                     dataProcessor.EndAsyncOperationGroup();

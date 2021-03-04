@@ -7,17 +7,17 @@
         /// <summary>
         /// total number of tasks
         /// </summary>
-        public abstract int TotalTasks { get; }
+        public int TotalTasks { get; protected set; }
 
         /// <summary>
         /// successful tasks
         /// </summary>
-        public abstract int SuccessfulTasks { get; }
+        public int SuccessfulTasks { get; protected set; }
 
         /// <summary>
         /// faild tasks
         /// </summary>
-        public abstract int FaildTasks { get; }
+        public int FaildTasks { get; protected set; }
 
         /// <summary>
         /// SuccessfulTasks + FaildTasks

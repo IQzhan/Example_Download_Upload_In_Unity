@@ -19,12 +19,14 @@ namespace E.Data
                 this.condition = condition;
             }
 
-            public void Do()
+            public bool Do()
             {
                 if (condition == null || (condition != null && condition()))
                 {
                     body();
+                    return true;
                 }
+                return false;
             }
         }
 
@@ -48,7 +50,8 @@ namespace E.Data
             {
                 try
                 {
-                    commond.Do();
+                    if (!commond.Do())
+                    { commands.Enqueue(commond); }
                 }
                 catch (Exception e)
                 {

@@ -8,11 +8,22 @@ namespace E.Data
 
         public AsyncOperationGroup StartAsyncOperationGroup()
         {
-            asyncOperationGroup = new AsyncOperationGroupImplement
-            { IsWorking = true };
+            AsyncOperationGroupImplement asyncOperation = asyncOperationGroup = new AsyncOperationGroupImplement { IsWorking = true };
             commandHandler.AddCommand(() =>
-            { asyncOperationGroup?.Close(); asyncOperationGroup?.onClose?.Invoke(); }, 
-            () => { return asyncOperationGroup.IsProcessingComplete; });
+            { if (asyncOperation != null) { asyncOperation.Close(); asyncOperation.onClose?.Invoke(); } },
+            () => 
+            {
+                if(asyncOperation != null)
+                {
+                    asyncOperation.progress = asyncOperation.GetProgress();
+                    asyncOperation.TotalTasks = asyncOperation.list.Count;
+                    asyncOperation.SuccessfulTasks = asyncOperation.GetSuccessfulTasks();
+                    asyncOperation.FaildTasks = asyncOperation.GetFaildTasks();
+                    return (asyncOperation.TotalTasks > 0)
+                    && (asyncOperation.CompletedTasks == asyncOperation.TotalTasks);
+                }
+                return false;
+            });
             return asyncOperationGroup;
         }
 
@@ -21,23 +32,24 @@ namespace E.Data
 
         private void TryAddAsyncOperation(in AsyncOperation asyncOperation)
         {
-            if(asyncOperationGroup != null)
-            { asyncOperationGroup.AddAsyncOperation(asyncOperation); }
+            if(asyncOperationGroup != null) { asyncOperationGroup.AddAsyncOperation(asyncOperation); }
         }
 
         private class AsyncOperationGroupImplement : AsyncOperationGroup 
         {
             public new bool IsWorking { get { return base.IsWorking; } set { base.IsWorking = value; } }
 
-            public override int TotalTasks => list == null ? 0 : list.Count;
+            public new int TotalTasks { get { return base.TotalTasks; } set { base.TotalTasks = value; } }
 
-            public override int SuccessfulTasks => GetSuccessfulTasks();
+            public new int SuccessfulTasks { get { return base.SuccessfulTasks; } set { base.SuccessfulTasks = value; } }
 
-            public override int FaildTasks => GetFaildTasks();
+            public new int FaildTasks { get { return base.FaildTasks; } set { base.FaildTasks = value; } }
 
-            public override double Progress => GetProgress();
+            public double progress;
 
-            private int GetSuccessfulTasks()
+            public override double Progress => progress;
+
+            public int GetSuccessfulTasks()
             {
                 if(list != null)
                 {
@@ -50,7 +62,7 @@ namespace E.Data
                 return 0;
             }
 
-            private int GetFaildTasks()
+            public int GetFaildTasks()
             {
                 if(list != null)
                 {
@@ -64,7 +76,7 @@ namespace E.Data
                 return 0;
             }
 
-            private double GetProgress()
+            public double GetProgress()
             {
                 if(list != null)
                 {
@@ -77,7 +89,7 @@ namespace E.Data
                 return 0;
             }
 
-            private List<AsyncOperation> list = new List<AsyncOperation>();
+            public List<AsyncOperation> list = new List<AsyncOperation>();
 
             public void AddAsyncOperation(AsyncOperation asyncOperation)
             { list?.Add(asyncOperation); }
