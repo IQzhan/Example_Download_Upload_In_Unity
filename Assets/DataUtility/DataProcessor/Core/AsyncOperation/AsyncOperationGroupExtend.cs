@@ -31,9 +31,7 @@ namespace E.Data
         { asyncOperationGroup = null; }
 
         private void TryAddAsyncOperation(in AsyncOperation asyncOperation)
-        {
-            if(asyncOperationGroup != null) { asyncOperationGroup.AddAsyncOperation(asyncOperation); }
-        }
+        { if(asyncOperationGroup != null) { asyncOperationGroup.AddAsyncOperation(asyncOperation); } }
 
         private class AsyncOperationGroupImplement : AsyncOperationGroup 
         {
