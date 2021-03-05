@@ -10,7 +10,7 @@
         /// <summary>
         /// processed data bytes
         /// </summary>
-        public long ProcessedBytes { get; protected set; } = 0;
+        public abstract long ProcessedBytes { get; }
 
         /// <summary>
         /// progress of this task [0, 1]

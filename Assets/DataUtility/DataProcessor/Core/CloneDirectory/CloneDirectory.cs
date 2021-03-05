@@ -28,51 +28,70 @@ namespace E.Data
                 string sourceUri = source.OriginalString;
                 string targetUri = target.OriginalString;
                 DirectoryAsyncOperation sourceDirectory = GetFileSystemEntries(sourceUri);
-                DirectoryAsyncOperation targetDirectory = GetFileSystemEntries(targetUri);
-                if(sourceDirectory == null || targetDirectory == null)
+                //DirectoryAsyncOperation targetDirectory = GetFileSystemEntries(targetUri);
+                if(sourceDirectory == null 
+                    //|| targetDirectory == null
+                    )
                 {
                     asyncOperation.IsError = true;
                     DoClose();
                     return asyncOperation;
                 }
                 sourceDirectory.onClose += () => { DoAction(); };
-                targetDirectory.onClose += () => { DoAction(); };
+                //targetDirectory.onClose += () => { DoAction(); };
                 void DoAction()
                 {
-                    if(sourceDirectory != null && sourceDirectory.IsProcessingComplete &&
-                        targetDirectory != null && targetDirectory.IsProcessingComplete)
+                    if(sourceDirectory != null && sourceDirectory.IsProcessingComplete 
+                        //&& targetDirectory != null && targetDirectory.IsProcessingComplete
+                        )
                     {
                         SortedList<string, FileSystemEntry> sourceEntries = sourceDirectory.Entries;
-                        SortedList<string, FileSystemEntry> targetEntries = targetDirectory.Entries;
-                        if(sourceEntries != null && targetEntries != null)
+                        //SortedList<string, FileSystemEntry> targetEntries = targetDirectory.Entries;
+                        if(sourceEntries != null 
+                            //&& targetEntries != null
+                            )
                         {
                             commandHandler.AddCommand(() =>
                             {
-                                Regex matchRule = new Regex(@"StreamingAssets[/\\](.+)");
-                                //TODO if b not in a then delete b
-                                //
+                                Regex matchRule = new Regex(Utility.GetFileName(sourceUri) + @"[/\\](.+)");
+                                //TODO
+                                //for get file from source
+                                //for get file from target
+                                //if target not in source then delete
+                                //source to array and clone from source one by one
+                                List<FileSystemEntry> sourceEntryList = new List<FileSystemEntry>();
                                 long totalSize = 0;
-                                List<CloneAsyncOperation> cloneAs = new List<CloneAsyncOperation>();
-                                foreach(KeyValuePair<string, FileSystemEntry> sourceEntryKV in sourceEntries)
+                                foreach (KeyValuePair<string, FileSystemEntry> sourceEntryKV in sourceEntries)
                                 {
                                     FileSystemEntry sourceEntry = sourceEntryKV.Value;
+                                    DataProcessorDebug.LogError(sourceEntry);
                                     if (!sourceEntry.isFolder)
                                     {
                                         totalSize += sourceEntry.size;
-                                        string partPath = matchRule.Match(sourceEntry.uri).Groups[1].Value;
-                                        string targetPath = targetUri + partPath;
-                                        CloneAsyncOperation cloneAsync =
-                                        Clone(sourceEntry.uri, targetPath);
-                                        cloneAsync.LoadData = false;
-                                        cloneAsync.onClose += () =>
-                                        {
-                                            //continue;
-                                            
-                                        };
-                                        cloneAs.Add(cloneAsync);
+                                        sourceEntryList.Add(sourceEntry);
                                     }
+                                    
                                 }
+
+                                DataProcessorDebug.Log(sourceEntryList.Count);
+
                                 asyncOperation.Size = totalSize;
+                                int sourceEntryListIndex = 0;
+                                if(sourceEntryList.Count > 0) { cloneNext(); }
+                                void cloneNext()
+                                {
+                                    FileSystemEntry sourceEntry = sourceEntryList[sourceEntryListIndex];
+                                    string partPath = matchRule.Match(sourceEntry.uri).Groups[1].Value;
+                                    string targetPath = targetUri + partPath;
+                                    CloneAsyncOperation cloneAsync = Clone(sourceEntry.uri, targetPath);
+                                    cloneAsync.LoadData = false;
+                                    cloneAsync.onClose += () =>
+                                    {
+                                        if(++sourceEntryListIndex < sourceEntryList.Count) { cloneNext(); }
+                                        else { asyncOperation.SetCurrentCloneAsyncOperation(null); }
+                                    };
+                                    asyncOperation.SetCurrentCloneAsyncOperation(cloneAsync);
+                                }
                             });
                         }
                         else

@@ -9,10 +9,8 @@
             {
                 if (!(source != null && source.IsAbsoluteUri))
                     throw new System.ArgumentException("must be absolute uri", "source");
-                if (target != null)
-                {
-                    if (!target.IsAbsoluteUri) throw new System.ArgumentException("must be absollute uri", "target");
-                }
+                if (!(target != null && target.IsAbsoluteUri))
+                    throw new System.ArgumentException("must be absolute uri", "target");
                 asyncOperation = new CloneDirectoryAsyncOperationImplement();
                 TryAddAsyncOperation(asyncOperation);
                 return true;
@@ -30,7 +28,30 @@
 
             public new long Size { get { return base.Size; } set { base.Size = value; } }
 
-            public new long ProcessedBytes { get { return base.ProcessedBytes; } set { base.ProcessedBytes = value; } }
+            private long processedBytes = 0;
+
+            private CloneAsyncOperation currentCloneAsyncOperation;
+
+            public void SetCurrentCloneAsyncOperation(CloneAsyncOperation currentCloneAsyncOperation)
+            {
+                if(this.currentCloneAsyncOperation != currentCloneAsyncOperation)
+                {
+                    if (this.currentCloneAsyncOperation != null)
+                    { processedBytes += this.currentCloneAsyncOperation.Size; }
+                    this.currentCloneAsyncOperation = currentCloneAsyncOperation;
+                }
+            }
+
+            private long GetProcessedBytes()
+            {
+                long value;
+                if (currentCloneAsyncOperation != null)
+                { value = processedBytes + currentCloneAsyncOperation.ProcessedBytes; }
+                else { value = processedBytes; }
+                return value;
+            }
+
+            public override long ProcessedBytes { get { return GetProcessedBytes(); } }
 
             public new bool IsError { get { return base.IsError; } set { base.IsError = value; } }
         }

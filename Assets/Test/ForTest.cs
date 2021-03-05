@@ -40,6 +40,7 @@ namespace E
         private DirectoryAsyncOperation directoryAsyncOperation;
         private AsyncOperationGroup asyncOperationGroup;
         private AsyncOperationGroup compareOperation;
+        private CloneDirectoryAsyncOperation cloneDirectoryAsyncOperation;
 
         private void Awake()
         {
@@ -132,6 +133,26 @@ namespace E
                 sb.Append(System.Environment.NewLine);
                 sb.Append("    completedTasks: ");
                 sb.Append(compareOperation.CompletedTasks);
+                sb.Append(System.Environment.NewLine);
+            }
+            if (cloneDirectoryAsyncOperation != null && cloneDirectoryAsyncOperation.Size > 0)
+            {
+                sb.Append("clone directory:");
+                sb.Append(System.Environment.NewLine);
+                sb.Append("    progress: ");
+                sb.Append(cloneDirectoryAsyncOperation.Progress);
+                sb.Append(System.Environment.NewLine);
+                sb.Append("    speed: ");
+                sb.Append(Utility.FormatDataSize(cloneDirectoryAsyncOperation.Speed, "<n><u>/s"));
+                sb.Append(System.Environment.NewLine);
+                sb.Append("    reamain time: ");
+                sb.Append(cloneDirectoryAsyncOperation.RemainingTime);
+                sb.Append(System.Environment.NewLine);
+                sb.Append("    size: ");
+                sb.Append(Utility.FormatDataSize(cloneDirectoryAsyncOperation.Size));
+                sb.Append(System.Environment.NewLine);
+                sb.Append("    processed size: ");
+                sb.Append(Utility.FormatDataSize(cloneDirectoryAsyncOperation.ProcessedBytes));
                 sb.Append(System.Environment.NewLine);
             }
             OverridePrint(sb.ToString());
@@ -257,8 +278,11 @@ namespace E
             //TODO Compare
             string sourceUri = "http://localhost:4322/StreamingAssets";
             string targetUri = "F:/Downloads/StreamingAssets/";
-            Regex matchRegex = new Regex(@"StreamingAssets[/\\](.+)");
-            CompareClone(sourceUri, targetUri, matchRegex);
+            //Regex matchRegex = new Regex(@"StreamingAssets[/\\](.+)");
+            //CompareClone(sourceUri, targetUri, matchRegex);
+            cloneDirectoryAsyncOperation = 
+                dataProcessor.CloneDirectory(sourceUri, targetUri);
+            cloneDirectoryAsyncOperation.onClose += () => { Debug.LogError("End fuck."); };
 
             //TODO group
             //test from http to local

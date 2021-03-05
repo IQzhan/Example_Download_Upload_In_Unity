@@ -43,7 +43,7 @@
                             long length = data.Length;
                             data.Position = 0;
                             asyncOperation.Size = length;
-                            asyncOperation.ProcessedBytes = currentPosition;
+                            asyncOperation.processedBytes = currentPosition;
                             while (currentPosition < length)
                             {
                                 if (asyncOperation.IsClosed) return;
@@ -53,7 +53,7 @@
                                 if (asyncOperation.IsClosed) return;
                                 targetStream.Write(temp, 0, readCount);
                                 currentPosition += readCount;
-                                asyncOperation.ProcessedBytes = currentPosition;
+                                asyncOperation.processedBytes = currentPosition;
                             }
                             if (asyncOperation.IsClosed) return;
                             if (currentPosition == length) { targetStream.Complete = true; return; }
@@ -121,7 +121,7 @@
                             long currentPosition = 0;
                             long length = data.LongLength;
                             asyncOperation.Size = length;
-                            asyncOperation.ProcessedBytes = currentPosition;
+                            asyncOperation.processedBytes = currentPosition;
                             while (currentPosition < length)
                             {
                                 if (asyncOperation.IsClosed) return;
@@ -131,7 +131,7 @@
                                 { temp[i] = data[currentPosition + i]; }
                                 targetStream.Write(temp, 0, readCount);
                                 currentPosition += readCount;
-                                asyncOperation.ProcessedBytes = currentPosition;
+                                asyncOperation.processedBytes = currentPosition;
                             }
                             if (asyncOperation.IsClosed) return;
                             if (currentPosition == length) { targetStream.Complete = true; return; }
@@ -273,7 +273,7 @@
                                     for (int i = 0; i < readCount; i++)
                                     { data[currentPosition + i] = temp[i]; }
                                     currentPosition += readCount;
-                                    asyncOperation.ProcessedBytes = currentPosition;
+                                    asyncOperation.processedBytes = currentPosition;
                                 }
                             }
                             //set currentPosition to target length if exists
@@ -281,7 +281,7 @@
                             {
                                 if (asyncOperation.IsClosed) return;
                                 currentPosition = targetStream.Length;
-                                asyncOperation.ProcessedBytes = currentPosition;
+                                asyncOperation.processedBytes = currentPosition;
                                 if (currentPosition == length) { targetStream.Complete = true; return; }
                                 targetStream.Position = currentPosition;
                             }
@@ -299,7 +299,7 @@
                                     { data[currentPosition + i] = temp[i]; }
                                 }
                                 currentPosition += readCount;
-                                asyncOperation.ProcessedBytes = currentPosition;
+                                asyncOperation.processedBytes = currentPosition;
                             }
                             if (asyncOperation.IsClosed) return;
                             if (currentPosition == length && targetExists) { targetStream.Complete = true; return; }

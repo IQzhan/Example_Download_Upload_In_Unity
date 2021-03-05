@@ -81,9 +81,13 @@
 
             public new long Size { get { return base.Size; } set { base.Size = value; } }
 
-            public new long ProcessedBytes { get { return base.ProcessedBytes; } set { base.ProcessedBytes = value; } }
+            //public new long ProcessedBytes { get { return base.ProcessedBytes; } set { base.ProcessedBytes = value; } }
 
             public new bool IsError { get { return base.IsError; } set { base.IsError = value; } }
+
+            public long processedBytes = 0;
+
+            public override long ProcessedBytes { get => processedBytes; }
         }
     }
 }
