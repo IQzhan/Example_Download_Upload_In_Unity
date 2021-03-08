@@ -35,11 +35,16 @@ namespace E.Data
                     DoClose();
                     return asyncOperation;
                 }
-                sourceDirectory.onClose += () => { DoAction(); };
-                //if(targetDirectory != null) targetDirectory.onClose += () => { DoAction(); };
+                int completedCount = 1;
+                if (targetDirectory != null) { completedCount++; }
+                sourceDirectory.onClose += () => { if(--completedCount == 0) DoAction(); };
+                if (targetDirectory != null)
+                {
+                    targetDirectory.onClose += () => { if (--completedCount == 0) DoAction(); };
+                }
                 void DoAction()
                 {
-                    if(sourceDirectory != null && sourceDirectory.IsProcessingComplete
+                    if( sourceDirectory.IsProcessingComplete
                         && ((targetDirectory == null) || (targetDirectory != null && targetDirectory.IsProcessingComplete))
                         )
                     {
@@ -71,25 +76,30 @@ namespace E.Data
                                     }
                                 }
                                 asyncOperation.Size = totalSize;
-                                
-                                //if(targetEntries != null)
-                                //{
-                                //    List<FileSystemEntry> targetEntryList = new List<FileSystemEntry>();
-                                //    Regex matchRule1 = new Regex(Utility.GetFileName(targetUri) + @"[/\\](.+)");
-                                //    foreach (KeyValuePair<string, FileSystemEntry> targetEntryKV in targetEntries)
-                                //    {
-                                //        FileSystemEntry targetEntry = targetEntryKV.Value;
-                                //        if (!targetEntry.isFolder)
-                                //        {
-                                //            //is in sourceEntries
-                                //            string partPath = matchRule1.Match(targetEntry.uri).Groups[1].Value;
-                                //            string sourcePath = targetUri + partPath;
-                                //            //DataProcessorDebug.Log("sourcePath " + sourcePath);
-                                //        }
-                                //    }
-                                //}
-                                
-                                
+
+                                if (targetEntries != null)
+                                {
+                                    List<FileSystemEntry> targetEntryList = new List<FileSystemEntry>();
+                                    Regex matchRule1 = new Regex(Utility.GetFileName(targetUri) + @"[/\\](.+)");
+                                    foreach (KeyValuePair<string, FileSystemEntry> targetEntryKV in targetEntries)
+                                    {
+                                        FileSystemEntry targetEntry = targetEntryKV.Value;
+                                        if (!targetEntry.isFolder)
+                                        {
+                                            //is in sourceEntries
+                                            string partPath = matchRule1.Match(targetEntry.uri).Groups[1].Value;
+                                            string sourcePath = targetUri + partPath;
+                                            if (sourceEntries.ContainsKey(sourcePath))
+                                            {
+                                                //TODO 
+                                                DataProcessorDebug.Log("exists ");
+                                            }
+
+                                        }
+                                    }
+                                }
+
+
                                 int sourceEntryListIndex = 0;
                                 if(sourceEntryList.Count > 0) { cloneNext(); }
                                 void cloneNext()
