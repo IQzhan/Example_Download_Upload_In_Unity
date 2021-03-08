@@ -276,7 +276,7 @@ namespace E
             //});
 
             //TODO Compare
-            string sourceUri = "http://localhost:4322/StreamingAssets";
+            string sourceUri = "http://localhost:4322/StreamingAssets/";
             string targetUri = "F:/Downloads/StreamingAssets/";
             //Regex matchRegex = new Regex(@"StreamingAssets[/\\](.+)");
             //CompareClone(sourceUri, targetUri, matchRegex);

@@ -36,9 +36,9 @@ namespace E.Data
                     else throw new System.Exception(@"connecting faild.");
                     bool targetExists = targetStream.Exists;
                     if (targetExists)
-                    { 
+                    {
                         asyncOperation.Entries = targetStream.GetFileSystemEntries(topOnly);
-                        if(asyncOperation.Entries == null)
+                        if (asyncOperation.Entries == null)
                         { throw new System.Exception("GetFileSystemEntries faild."); }
                         asyncOperation.progress = 1;
                     }

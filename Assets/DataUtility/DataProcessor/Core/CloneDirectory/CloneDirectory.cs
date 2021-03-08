@@ -28,25 +28,25 @@ namespace E.Data
                 string sourceUri = source.OriginalString;
                 string targetUri = target.OriginalString;
                 DirectoryAsyncOperation sourceDirectory = GetFileSystemEntries(sourceUri);
-                //DirectoryAsyncOperation targetDirectory = GetFileSystemEntries(targetUri);
-                if(sourceDirectory == null 
-                    //|| targetDirectory == null
-                    )
+                DirectoryAsyncOperation targetDirectory = GetFileSystemEntries(targetUri);
+                if (sourceDirectory == null)
                 {
                     asyncOperation.IsError = true;
                     DoClose();
                     return asyncOperation;
                 }
                 sourceDirectory.onClose += () => { DoAction(); };
-                //targetDirectory.onClose += () => { DoAction(); };
+                //if(targetDirectory != null) targetDirectory.onClose += () => { DoAction(); };
                 void DoAction()
                 {
-                    if(sourceDirectory != null && sourceDirectory.IsProcessingComplete 
-                        //&& targetDirectory != null && targetDirectory.IsProcessingComplete
+                    if(sourceDirectory != null && sourceDirectory.IsProcessingComplete
+                        && ((targetDirectory == null) || (targetDirectory != null && targetDirectory.IsProcessingComplete))
                         )
                     {
                         SortedList<string, FileSystemEntry> sourceEntries = sourceDirectory.Entries;
-                        //SortedList<string, FileSystemEntry> targetEntries = targetDirectory.Entries;
+                        SortedList<string, FileSystemEntry> targetEntries = null;
+                        if (targetDirectory != null) { targetEntries = targetDirectory.Entries; }
+                        
                         if(sourceEntries != null 
                             //&& targetEntries != null
                             )
@@ -64,18 +64,32 @@ namespace E.Data
                                 foreach (KeyValuePair<string, FileSystemEntry> sourceEntryKV in sourceEntries)
                                 {
                                     FileSystemEntry sourceEntry = sourceEntryKV.Value;
-                                    DataProcessorDebug.LogError(sourceEntry);
                                     if (!sourceEntry.isFolder)
                                     {
                                         totalSize += sourceEntry.size;
                                         sourceEntryList.Add(sourceEntry);
                                     }
-                                    
                                 }
-
-                                DataProcessorDebug.Log(sourceEntryList.Count);
-
                                 asyncOperation.Size = totalSize;
+                                
+                                //if(targetEntries != null)
+                                //{
+                                //    List<FileSystemEntry> targetEntryList = new List<FileSystemEntry>();
+                                //    Regex matchRule1 = new Regex(Utility.GetFileName(targetUri) + @"[/\\](.+)");
+                                //    foreach (KeyValuePair<string, FileSystemEntry> targetEntryKV in targetEntries)
+                                //    {
+                                //        FileSystemEntry targetEntry = targetEntryKV.Value;
+                                //        if (!targetEntry.isFolder)
+                                //        {
+                                //            //is in sourceEntries
+                                //            string partPath = matchRule1.Match(targetEntry.uri).Groups[1].Value;
+                                //            string sourcePath = targetUri + partPath;
+                                //            //DataProcessorDebug.Log("sourcePath " + sourcePath);
+                                //        }
+                                //    }
+                                //}
+                                
+                                
                                 int sourceEntryListIndex = 0;
                                 if(sourceEntryList.Count > 0) { cloneNext(); }
                                 void cloneNext()

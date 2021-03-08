@@ -7,7 +7,7 @@ namespace E.Data
 {
     public class StandaloneStreamFactory : DataStreamFactory
     {
-        protected StandaloneStreamFactory() 
+        protected StandaloneStreamFactory()
         {
             System.Net.ServicePointManager.DefaultConnectionLimit = 512;
         }
@@ -16,9 +16,9 @@ namespace E.Data
         {
             if (uri.IsFile)
             { return new FileStream(uri); }
-            else if((uri.Scheme == System.Uri.UriSchemeHttp) || (uri.Scheme == System.Uri.UriSchemeHttps))
+            else if ((uri.Scheme == System.Uri.UriSchemeHttp) || (uri.Scheme == System.Uri.UriSchemeHttps))
             { return new HttpStream(uri, this); }
-            else if(uri.Scheme == System.Uri.UriSchemeFtp)
+            else if (uri.Scheme == System.Uri.UriSchemeFtp)
             { return new FtpStream(uri, this); }
             else { throw new System.ArgumentException("Unsupported uri scheme.", "uri"); }
         }
@@ -71,7 +71,7 @@ namespace E.Data
             private System.IO.DirectoryInfo directoryInfo;
 
             private string FileName
-            { get { if(fileName == null) { RefreshFileName(); } return fileName; } }
+            { get { if (fileName == null) { RefreshFileName(); } return fileName; } }
 
             int setCount1 = 0;
 
@@ -96,7 +96,7 @@ namespace E.Data
                     {
                         setCount1++;
                         strbbs = fileNames.Length.ToString();
-                        fileName = fileNames[0]; fileInfo = null; fileInfo = new System.IO.FileInfo(fileName); AsCollection = false; 
+                        fileName = fileNames[0]; fileInfo = null; fileInfo = new System.IO.FileInfo(fileName); AsCollection = false;
                     }
                 }
                 return fileName != null;
@@ -129,7 +129,7 @@ namespace E.Data
             public override long Length
             { get { return FileName != null ? GetLength() : 0; } }
 
-            private long GetLength() 
+            private long GetLength()
             { return !AsCollection ? ReadStream.Length : 0; }
 
             private System.DateTime lastModified = System.DateTime.MinValue;
@@ -178,7 +178,7 @@ namespace E.Data
                     lastModified = value;
                 }
             }
-            
+
             public override string Version
             {
                 get
@@ -194,7 +194,7 @@ namespace E.Data
                 {
                     if (!AsCollection) { fileInfo.Delete(); }
                     else { directoryInfo.Delete(true); }
-                }                    
+                }
                 ResetFileTarget();
                 return true;
             }
@@ -210,7 +210,7 @@ namespace E.Data
                         string localPath = uri.LocalPath;
                         string dir = GetDirectoryName(localPath);
                         if (!System.IO.Directory.Exists(dir)) { System.IO.Directory.CreateDirectory(dir); }
-                        
+
                         System.IO.File.Create(localPath + "." + lasttime.Ticks.ToString() + extend).Dispose();
                         ResetFileTarget();
                         result = true;
@@ -234,7 +234,7 @@ namespace E.Data
 
             private long position;
 
-            public override long Position 
+            public override long Position
             {
                 get
                 {
@@ -264,7 +264,7 @@ namespace E.Data
 
             private void DisposeReadStream()
             {
-                if(readStream != null)
+                if (readStream != null)
                 { readStream.Dispose(); readStream = null; }
             }
 
@@ -275,8 +275,8 @@ namespace E.Data
                 get
                 {
                     DisposeWriteStream();
-                    if(readStream == null)
-                    { 
+                    if (readStream == null)
+                    {
                         readStream = System.IO.File.Open(FileName, System.IO.FileMode.Open, System.IO.FileAccess.Read, System.IO.FileShare.Read);
                         readStream.Position = position;
                     }
@@ -286,7 +286,7 @@ namespace E.Data
 
             private void DisposeWriteStream()
             {
-                if(writeStream != null)
+                if (writeStream != null)
                 { writeStream.Dispose(); writeStream = null; }
             }
 
@@ -297,7 +297,7 @@ namespace E.Data
                 get
                 {
                     DisposeReadStream();
-                    if(writeStream == null)
+                    if (writeStream == null)
                     {
                         writeStream = System.IO.File.Open(FileName, System.IO.FileMode.OpenOrCreate, System.IO.FileAccess.Write);
                         writeStream.Position = position;
@@ -544,7 +544,7 @@ namespace E.Data
 
             private void DisposeReqRsp()
             {
-                if(webRequest != null && webResponse == null)
+                if (webRequest != null && webResponse == null)
                 { webResponse = GetResponse(webRequest); }
                 webResponse?.Dispose();
                 webResponse = null;
@@ -654,7 +654,7 @@ namespace E.Data
                             return CreateDir(GetDirectoryName(dirUri)) && CreateDir(dirUri);
                         case System.Net.HttpStatusCode.MethodNotAllowed:
                             return true;
-                        default: 
+                        default:
                             throw new System.IO.IOException("create dir faild." + Environment.NewLine + e.Message + Environment.NewLine + e.StackTrace);
                     }
                 }
@@ -678,10 +678,10 @@ namespace E.Data
                 }
                 catch (System.Net.WebException e)
                 {
-                    if(httpWebResponse == null)
+                    if (httpWebResponse == null)
                     { httpWebResponse = e.Response as System.Net.HttpWebResponse; }
                     if (httpWebResponse.StatusCode == System.Net.HttpStatusCode.NotFound) return true;
-                    throw new System.IO.IOException("delete file faild." + Environment.NewLine + e.Message + Environment.NewLine + e.StackTrace); 
+                    throw new System.IO.IOException("delete file faild." + Environment.NewLine + e.Message + Environment.NewLine + e.StackTrace);
                 }
                 finally
                 {
@@ -700,12 +700,12 @@ namespace E.Data
                 if (count > 0)
                 {
                     SortedList<string, FileSystemEntry> resourceList = new SortedList<string, FileSystemEntry>();
-                    if(count > 1)
+                    if (count > 1)
                     {
                         for (int i = 1; i < count; i++)
                         {
                             GroupCollection groupCollection = matchCollection[i].Groups;
-                            if (groupCollection.Count == 5)
+                            if (groupCollection.Count == 6)
                             {
                                 string mUri = groupCollection[1].Value;
                                 string mLastModified = groupCollection[2].Value;
@@ -811,8 +811,8 @@ namespace E.Data
 
         private class FtpStream : DataStream
         {
-            public FtpStream(in System.Uri uri, StandaloneStreamFactory factory) : base(uri) { this.factory = factory;  }
-            
+            public FtpStream(in System.Uri uri, StandaloneStreamFactory factory) : base(uri) { this.factory = factory; }
+
             private StandaloneStreamFactory factory;
 
             private int timeout;
@@ -825,7 +825,7 @@ namespace E.Data
 
             public override void SetAccount(string username, string password)
             {
-                if(!string.IsNullOrWhiteSpace(username) && !string.IsNullOrWhiteSpace(password))
+                if (!string.IsNullOrWhiteSpace(username) && !string.IsNullOrWhiteSpace(password))
                 { this.username = username; this.password = password; }
             }
 
@@ -843,7 +843,7 @@ namespace E.Data
             {
                 lock (string.Intern(hostUri))
                 {
-                    if(!force && factory.testedHostConnection.TryGetValue(hostUri, out bool val)) { return val; }
+                    if (!force && factory.testedHostConnection.TryGetValue(hostUri, out bool val)) { return val; }
                     else { return factory.testedHostConnection[hostUri] = ForceTestConnection(hostUri); }
                 }
             }
@@ -908,14 +908,14 @@ namespace E.Data
 
             public override bool Complete
             {
-                get { string fn = FileName; return fn != null && ( AsCollection || (!AsCollection && !fn.EndsWith(extend))); }
+                get { string fn = FileName; return fn != null && (AsCollection || (!AsCollection && !fn.EndsWith(extend))); }
                 set
                 {
                     if (AsCollection) return;
                     string fn = FileName;
                     if (value && fn != null && fn.EndsWith(extend))
                     {
-                        if(!Rename(fn, GetFileName(uri.OriginalString))) 
+                        if (!Rename(fn, GetFileName(uri.OriginalString)))
                         { throw new System.IO.IOException("rename faild."); }
                         ResetFileTarget();
                     }
@@ -984,14 +984,14 @@ namespace E.Data
 
             public override bool Delete()
             {
-                if((!AsCollection && DeleteFile(FileName)) || (AsCollection && DeleteDir(FileName))) { ResetFileTarget(); return true; }
+                if ((!AsCollection && DeleteFile(FileName)) || (AsCollection && DeleteDir(FileName))) { ResetFileTarget(); return true; }
                 return false;
             }
 
             public override bool Create()
             {
-                return 
-                    fileName != null || 
+                return
+                    fileName != null ||
                     (fileName == null &&
                     ((!AsCollection &&
                     LastModified != System.DateTime.MinValue &&
@@ -1004,7 +1004,7 @@ namespace E.Data
             { return !AsCollection ? ResponseStream.Read(buffer, offset, count) : 0; }
 
             public override void Write(byte[] buffer, int offset, int count)
-            { if(!AsCollection) RequestStream.Write(buffer, offset, count); }
+            { if (!AsCollection) RequestStream.Write(buffer, offset, count); }
 
             protected override void ReleaseManaged()
             {
@@ -1027,7 +1027,7 @@ namespace E.Data
                 if (req == null) return null;
                 req.Method = mathod;
                 req.Timeout = timeout;
-                if(username != null && password != null)
+                if (username != null && password != null)
                 { req.Credentials = new System.Net.NetworkCredential(username, password); }
                 req.KeepAlive = false;
                 req.UsePassive = false;
@@ -1140,7 +1140,7 @@ namespace E.Data
                                 string mMark = groupCollection[2].Value;
                                 string mName = groupCollection[3].Value;
                                 if (mMark.Equals(DIRMark)) { isFolder = true; }
-                                if(mName == matchName || (mName.Contains(matchName) && mName.EndsWith(extend)))
+                                if (mName == matchName || (mName.Contains(matchName) && mName.EndsWith(extend)))
                                 { mStr = mName; }
                             }
                         }
@@ -1351,9 +1351,9 @@ namespace E.Data
                     if (ftpWebRequest == null) return length;
                     ftpWebResponse = GetResponse(ftpWebRequest);
                     if (ftpWebResponse == null) return length;
-                    length = ftpWebResponse.ContentLength; 
+                    length = ftpWebResponse.ContentLength;
                 }
-                catch (System.Exception e) 
+                catch (System.Exception e)
                 { throw new System.IO.IOException("get length faild." + Environment.NewLine + e.Message + Environment.NewLine + e.StackTrace); }
                 finally
                 {
