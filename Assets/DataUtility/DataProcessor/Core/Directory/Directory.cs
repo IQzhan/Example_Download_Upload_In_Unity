@@ -39,7 +39,7 @@ namespace E.Data
                     {
                         asyncOperation.Entries = targetStream.GetFileSystemEntries(topOnly);
                         if (asyncOperation.Entries == null)
-                        { throw new System.Exception("GetFileSystemEntries faild."); }
+                        { throw new System.Exception("get file system entries faild."); }
                         asyncOperation.progress = 1;
                     }
                     else
@@ -48,7 +48,9 @@ namespace E.Data
                 catch(System.Exception e)
                 {
                     asyncOperation.IsError = true;
-                    throw new System.Exception("cause an error while try list directory with " + targetStream?.uri, e);
+                    e.Source = "dame";
+                    throw new System.Exception("cause an error while try list directory with " + targetStream?.uri 
+                        + System.Environment.NewLine + e.Message + System.Environment.NewLine + e.StackTrace);
                 }
             }
             void cleanAction()

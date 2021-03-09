@@ -283,7 +283,7 @@ namespace E
             cloneDirectoryAsyncOperation = 
                 dataProcessor.CloneDirectory(sourceUri, targetUri);
             cloneDirectoryAsyncOperation.onClose += () => { Debug.LogError("End fuck."); };
-
+            
             //TODO group
             //test from http to local
             //string httpUri0 = "http://localhost:4322/Downloads/jdk-8u271-windows-x64.exe";
