@@ -9,8 +9,14 @@ namespace E.Data
         {
             try
             {
-                System.Uri sourceUri = new System.Uri(source);
-                System.Uri targetUri = new System.Uri(target);
+                if(string.IsNullOrWhiteSpace(source)) { throw new System.ArgumentNullException("source", "can not be null."); }
+                if (string.IsNullOrWhiteSpace(target)) { throw new System.ArgumentNullException("target", "can not be null."); }
+                System.Uri sourceUri = null;
+                System.Uri targetUri = null;
+                if (!source.EndsWith("/")) sourceUri = new System.Uri(source + "/");
+                if (!target.EndsWith("/")) targetUri = new System.Uri(target + "/");
+                if (sourceUri == null) sourceUri = new System.Uri(source);
+                if (targetUri == null) targetUri = new System.Uri(target);
                 return CloneDirectory(sourceUri, targetUri);
             }
             catch (System.Exception e)
@@ -52,18 +58,11 @@ namespace E.Data
                         SortedList<string, FileSystemEntry> targetEntries = null;
                         if (targetDirectory != null) { targetEntries = targetDirectory.Entries; }
                         
-                        if(sourceEntries != null 
-                            //&& targetEntries != null
-                            )
+                        if(sourceEntries != null)
                         {
                             commandHandler.AddCommand(() =>
                             {
                                 Regex matchRule = new Regex(Utility.GetFileName(sourceUri) + @"[/\\](.+)");
-                                //TODO
-                                //for get file from source
-                                //for get file from target
-                                //if target not in source then delete
-                                //source to array and clone from source one by one
                                 List<FileSystemEntry> sourceEntryList = new List<FileSystemEntry>();
                                 long totalSize = 0;
                                 foreach (KeyValuePair<string, FileSystemEntry> sourceEntryKV in sourceEntries)
@@ -76,45 +75,53 @@ namespace E.Data
                                     }
                                 }
                                 asyncOperation.Size = totalSize;
-
+                                bool doCloneMark = false;
                                 if (targetEntries != null)
                                 {
-                                    List<FileSystemEntry> targetEntryList = new List<FileSystemEntry>();
+                                    List<FileSystemEntry> deleteList = new List<FileSystemEntry>();
                                     Regex matchRule1 = new Regex(Utility.GetFileName(targetUri) + @"[/\\](.+)");
                                     foreach (KeyValuePair<string, FileSystemEntry> targetEntryKV in targetEntries)
                                     {
                                         FileSystemEntry targetEntry = targetEntryKV.Value;
                                         if (!targetEntry.isFolder)
                                         {
-                                            //is in sourceEntries
                                             string partPath = matchRule1.Match(targetEntry.uri).Groups[1].Value;
-                                            string sourcePath = targetUri + partPath;
-                                            if (sourceEntries.ContainsKey(sourcePath))
-                                            {
-                                                //TODO 
-                                                DataProcessorDebug.Log("exists ");
-                                            }
-
+                                            string sourcePath = sourceUri + partPath;
+                                            if (!sourceEntries.ContainsKey(Utility.ConvertURLSlash(sourcePath)))
+                                            { deleteList.Add(targetEntry); }
                                         }
                                     }
-                                }
-
-
-                                int sourceEntryListIndex = 0;
-                                if(sourceEntryList.Count > 0) { cloneNext(); }
-                                void cloneNext()
-                                {
-                                    FileSystemEntry sourceEntry = sourceEntryList[sourceEntryListIndex];
-                                    string partPath = matchRule.Match(sourceEntry.uri).Groups[1].Value;
-                                    string targetPath = targetUri + partPath;
-                                    CloneAsyncOperation cloneAsync = Clone(sourceEntry.uri, targetPath);
-                                    cloneAsync.LoadData = false;
-                                    cloneAsync.onClose += () =>
+                                    int deleteListIndex = 0;
+                                    if(deleteList.Count > 0) { doCloneMark = true; deleteNext(); }
+                                    void deleteNext()
                                     {
-                                        if(++sourceEntryListIndex < sourceEntryList.Count) { cloneNext(); }
-                                        else { asyncOperation.SetCurrentCloneAsyncOperation(null); }
-                                    };
-                                    asyncOperation.SetCurrentCloneAsyncOperation(cloneAsync);
+                                        DeleteAsyncOperation deleteAsync = Delete(deleteList[deleteListIndex].uri);
+                                        deleteAsync.onClose += () =>
+                                        {
+                                            if (++deleteListIndex < sourceEntryList.Count) { deleteNext(); }
+                                            else { doClone(); }
+                                        };
+                                    }
+                                }
+                                if (!doCloneMark) doClone();
+                                void doClone()
+                                {
+                                    int sourceEntryListIndex = 0;
+                                    if (sourceEntryList.Count > 0) { cloneNext(); }
+                                    void cloneNext()
+                                    {
+                                        FileSystemEntry sourceEntry = sourceEntryList[sourceEntryListIndex];
+                                        string partPath = matchRule.Match(sourceEntry.uri).Groups[1].Value;
+                                        string targetPath = targetUri + partPath;
+                                        CloneAsyncOperation cloneAsync = Clone(sourceEntry.uri, targetPath);
+                                        cloneAsync.LoadData = false;
+                                        cloneAsync.onClose += () =>
+                                        {
+                                            if (++sourceEntryListIndex < sourceEntryList.Count) { cloneNext(); }
+                                            else { asyncOperation.SetCurrentCloneAsyncOperation(null); }
+                                        };
+                                        asyncOperation.SetCurrentCloneAsyncOperation(cloneAsync);
+                                    }
                                 }
                             });
                         }

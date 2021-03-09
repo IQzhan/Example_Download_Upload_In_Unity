@@ -45,6 +45,13 @@ namespace E.Data
         private static string GetFileName(string filePath)
         { return fileNameRegex.Match(filePath).Groups[1].Value; }
 
+        private static readonly Regex SlashRegex = new Regex(@"[/\\]");
+
+        private static string ConvertURLSlash(string input)
+        {
+            return SlashRegex.Replace(input, "/");
+        }
+
         private class FileStream : DataStream
         {
             public FileStream(in System.Uri uri) : base(uri) { }
@@ -339,7 +346,7 @@ namespace E.Data
                         { df = new System.IO.DirectoryInfo(entry); }
                         else
                         { ff = new System.IO.FileInfo(entry); }
-                        infos[entry] = new FileSystemEntry()
+                        infos[ConvertURLSlash(entry)] = new FileSystemEntry()
                         {
                             uri = entry,
                             name = name,
@@ -712,7 +719,7 @@ namespace E.Data
                                 string mName = groupCollection[3].Value;
                                 string mLength = groupCollection[4].Value;
                                 string mIsFolder = groupCollection[5].Value;
-                                resourceList.Add(mUri, new FileSystemEntry
+                                resourceList.Add(ConvertURLSlash(mUri), new FileSystemEntry
                                 {
                                     uri = mUri,
                                     name = mName,
@@ -1426,7 +1433,7 @@ namespace E.Data
                                 string mUri = uri + mName;
                                 bool isFolder = false;
                                 if (mMark.Equals(DIRMark)) { isFolder = true; }
-                                result[mUri] = new FileSystemEntry()
+                                result[ConvertURLSlash(mUri)] = new FileSystemEntry()
                                 {
                                     uri = mUri,
                                     name = mName,
