@@ -54,7 +54,6 @@ namespace E.Data
                         SortedList<string, FileSystemEntry> targetEntries = null;
                         if (targetDirectory != null && targetDirectory.IsProcessingComplete)
                         { targetEntries = targetDirectory.Entries; }
-                        
                         if(sourceEntries != null)
                         {
                             commandHandler.AddCommand(() =>
