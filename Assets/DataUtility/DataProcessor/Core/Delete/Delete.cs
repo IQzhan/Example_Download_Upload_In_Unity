@@ -46,7 +46,9 @@
                         catch (System.Exception e)
                         {
                             asyncOperation.IsError = true;
-                            throw new System.Exception("cause an error while delete from " + targetStream?.uri, e);
+                            DataProcessorDebug.LogError("cause an error while delete from " + targetStream?.uri 
+                                + System.Environment.NewLine + e.Message + System.Environment.NewLine + e.StackTrace);
+                            throw e;
                         }
                     }
                     void cleanTask()

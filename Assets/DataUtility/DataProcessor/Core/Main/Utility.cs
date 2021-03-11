@@ -6,20 +6,18 @@ namespace E.Data
     {
         private class Utility
         {
-            private static readonly Regex fileNameRegex = new Regex(@"(?:[/\\]+([^/\\]+)[/\\]*)$");
+            private static readonly Regex FileNameRegex = new Regex(@"(?:[/\\]+([^/\\]+)[/\\]*)$");
 
             public static string GetDirectoryName(string filePath)
-            { return fileNameRegex.Replace(filePath, string.Empty); }
+            { return FileNameRegex.Replace(filePath, string.Empty); }
 
             public static string GetFileName(string filePath)
-            { return fileNameRegex.Match(filePath).Groups[1].Value; }
+            { return FileNameRegex.Match(filePath).Groups[1].Value; }
 
             private static readonly Regex SlashRegex = new Regex(@"[/\\]");
 
             public static string ConvertURLSlash(string input)
-            {
-                return SlashRegex.Replace(input, "/");
-            }
+            { return SlashRegex.Replace(input, "/"); }
 
         }
     }

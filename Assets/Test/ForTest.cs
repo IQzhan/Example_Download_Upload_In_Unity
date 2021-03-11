@@ -275,15 +275,6 @@ namespace E
             //    }
             //});
 
-            //TODO Compare
-            string sourceUri = "http://localhost:4322/StreamingAssets/";
-            string targetUri = "F:/Downloads/StreamingAssets/";
-            //Regex matchRegex = new Regex(@"StreamingAssets[/\\](.+)");
-            //CompareClone(sourceUri, targetUri, matchRegex);
-            cloneDirectoryAsyncOperation = 
-                dataProcessor.CloneDirectory(sourceUri, targetUri);
-            cloneDirectoryAsyncOperation.onClose += () => { Debug.LogError("End fuck."); };
-            
             //TODO group
             //test from http to local
             //string httpUri0 = "http://localhost:4322/Downloads/jdk-8u271-windows-x64.exe";
@@ -299,50 +290,16 @@ namespace E
             //dataProcessor.Clone(httpUri0, localUri2).LoadData = false;
             //dataProcessor.Clone(httpUri0, localUri3).LoadData = false;
             //dataProcessor.Clone(httpUri0, localUri4).LoadData = false;
-            //dataProcessor.Clone(httpUri0, localUri5).LoadData = false;
-            //dataProcessor.EndAsyncOperationGroup();
 
-            //TODO encode and decode
-
-            //TODO android
-
-
+            //TODO Compare
+            string sourceUri = "http://localhost:4322/StreamingAssets/";
+            string targetUri = "F:/Downloads/StreamingAssets/";
+            cloneDirectoryAsyncOperation =
+                dataProcessor.CloneDirectory(sourceUri, targetUri);
+            cloneDirectoryAsyncOperation.onClose += () => { Debug.LogError("End fuck."); };
+            
         }
 
-        private void CompareClone(string sourceUri, string targetUri, Regex matchRule)
-        {
-            dataProcessor.MaxTaskNum = 1;
-            DirectoryAsyncOperation directoryAsyncOperation = dataProcessor.GetFileSystemEntries(sourceUri);
-            directoryAsyncOperation.onClose += () =>
-            {
-                if (directoryAsyncOperation.IsProcessingComplete)
-                {
-                    compareOperation = dataProcessor.StartAsyncOperationGroup();                    
-                    compareOperation.onClose += () =>
-                    { Debug.LogError("End"); };
-                    foreach (KeyValuePair<string, FileSystemEntry> kv
-                    in directoryAsyncOperation.Entries)
-                    {
-                        FileSystemEntry fsn = kv.Value;
-                        if (!fsn.isFolder)
-                        {
-                            string partPath = matchRule.Match(kv.Key).Groups[1].Value;
-                            string targetPath = targetUri + partPath;
-                            CloneAsyncOperation cloneAsync =
-                            dataProcessor.Clone(fsn.uri, targetPath);
-                            cloneAsync.LoadData = false;
-                            cloneAsync.onClose += () => 
-                            {
-                                //continue;
-
-                            };
-                            
-                        }
-                    }
-                    dataProcessor.EndAsyncOperationGroup();
-                }
-            };
-        }
 
         private bool DeleteDir(string dirUri)
         {

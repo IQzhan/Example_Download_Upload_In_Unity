@@ -45,18 +45,15 @@ namespace E.Data
                 if (targetDirectory != null) { completedCount++; }
                 sourceDirectory.onClose += () => { if(--completedCount == 0) DoAction(); };
                 if (targetDirectory != null)
-                {
-                    targetDirectory.onClose += () => { if (--completedCount == 0) DoAction(); };
-                }
+                { targetDirectory.onClose += () => { if (--completedCount == 0) DoAction(); }; }
                 void DoAction()
                 {
-                    if( sourceDirectory.IsProcessingComplete
-                        && ((targetDirectory == null) || (targetDirectory != null && targetDirectory.IsProcessingComplete))
-                        )
+                    if(sourceDirectory.IsProcessingComplete)
                     {
                         SortedList<string, FileSystemEntry> sourceEntries = sourceDirectory.Entries;
                         SortedList<string, FileSystemEntry> targetEntries = null;
-                        if (targetDirectory != null) { targetEntries = targetDirectory.Entries; }
+                        if (targetDirectory != null && targetDirectory.IsProcessingComplete)
+                        { targetEntries = targetDirectory.Entries; }
                         
                         if(sourceEntries != null)
                         {
@@ -107,7 +104,7 @@ namespace E.Data
                                 void doClone()
                                 {
                                     int sourceEntryListIndex = 0;
-                                    if (sourceEntryList.Count > 0) { cloneNext(); }
+                                    if (sourceEntryList.Count > 0) { cloneNext(); } else { DoClose(); }
                                     void cloneNext()
                                     {
                                         FileSystemEntry sourceEntry = sourceEntryList[sourceEntryListIndex];
@@ -118,7 +115,7 @@ namespace E.Data
                                         cloneAsync.onClose += () =>
                                         {
                                             if (++sourceEntryListIndex < sourceEntryList.Count) { cloneNext(); }
-                                            else { asyncOperation.SetCurrentCloneAsyncOperation(null); }
+                                            else { asyncOperation.SetCurrentCloneAsyncOperation(null); DoClose(); }
                                         };
                                         asyncOperation.SetCurrentCloneAsyncOperation(cloneAsync);
                                     }
