@@ -22,6 +22,17 @@
             }
         }
 
+        private string GetOriginalString(in System.Uri uri)
+        {
+            if (uri.IsFile)
+            { return uri.LocalPath; }
+            else if ((uri.Scheme == System.Uri.UriSchemeHttp) || (uri.Scheme == System.Uri.UriSchemeHttps))
+            { return uri.OriginalString; }
+            else if (uri.Scheme == System.Uri.UriSchemeFtp)
+            { return uri.OriginalString; }
+            else { throw new System.ArgumentException("Unsupported uri scheme.", "uri"); }
+        }
+
         private class CloneDirectoryAsyncOperationImplement : CloneDirectoryAsyncOperation
         {
             public new bool IsWorking { get { return base.IsWorking; } set { base.IsWorking = value; } }

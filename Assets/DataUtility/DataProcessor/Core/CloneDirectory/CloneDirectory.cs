@@ -31,8 +31,8 @@ namespace E.Data
             if(Check(source, target, out CloneDirectoryAsyncOperationImplement asyncOperation))
             {
                 asyncOperation.IsWorking = true;
-                string sourceUri = source.OriginalString;
-                string targetUri = target.OriginalString;
+                string sourceUri = GetOriginalString(source);
+                string targetUri = GetOriginalString(target);
                 DirectoryAsyncOperation sourceDirectory = GetFileSystemEntries(sourceUri);
                 DirectoryAsyncOperation targetDirectory = GetFileSystemEntries(targetUri);
                 if (sourceDirectory == null)
