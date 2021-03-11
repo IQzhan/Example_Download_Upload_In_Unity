@@ -245,9 +245,7 @@
                                 targetStream.LastModified = sourceStream.LastModified;
                                 if (asyncOperation.IsClosed) return;
                                 if (!targetStream.Create()) 
-                                {
-                                    throw new System.IO.IOException("create target faild."); 
-                                }
+                                { throw new System.IO.IOException("create target faild."); }
                                 targetExists = true;
                             }
                             if (asyncOperation.IsClosed) return;

@@ -95,7 +95,7 @@ namespace E.Data
                                         DeleteAsyncOperation deleteAsync = Delete(deleteList[deleteListIndex].uri);
                                         deleteAsync.onClose += () =>
                                         {
-                                            if (++deleteListIndex < sourceEntryList.Count) { deleteNext(); }
+                                            if ((++deleteListIndex) < sourceEntryList.Count) { deleteNext(); }
                                             else { doClone(); }
                                         };
                                     }

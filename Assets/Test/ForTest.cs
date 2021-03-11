@@ -293,11 +293,11 @@ namespace E
 
             //TODO Compare
             string sourceUri = "http://localhost:4322/StreamingAssets/";
+            //string sourceUri = "http://localhost:4406/StreamingAssets/";
             string targetUri = "F:/Downloads/StreamingAssets/";
             cloneDirectoryAsyncOperation =
                 dataProcessor.CloneDirectory(sourceUri, targetUri);
             cloneDirectoryAsyncOperation.onClose += () => { Debug.LogError("End fuck."); };
-            
         }
 
 
