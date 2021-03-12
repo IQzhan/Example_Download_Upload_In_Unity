@@ -9,7 +9,7 @@ namespace E.Data
         {
             try
             {
-                if(string.IsNullOrWhiteSpace(source)) { throw new System.ArgumentNullException("source", "can not be null."); }
+                if (string.IsNullOrWhiteSpace(source)) { throw new System.ArgumentNullException("source", "can not be null."); }
                 if (string.IsNullOrWhiteSpace(target)) { throw new System.ArgumentNullException("target", "can not be null."); }
                 System.Uri sourceUri = null;
                 System.Uri targetUri = null;
@@ -28,7 +28,7 @@ namespace E.Data
 
         public CloneDirectoryAsyncOperation CloneDirectory(in System.Uri source, in System.Uri target)
         {
-            if(Check(source, target, out CloneDirectoryAsyncOperationImplement asyncOperation))
+            if (Check(source, target, out CloneDirectoryAsyncOperationImplement asyncOperation))
             {
                 asyncOperation.IsWorking = true;
                 string sourceUri = GetOriginalString(source);
@@ -43,18 +43,18 @@ namespace E.Data
                 }
                 int completedCount = 1;
                 if (targetDirectory != null) { completedCount++; }
-                sourceDirectory.onClose += () => { if(--completedCount == 0) DoAction(); };
+                sourceDirectory.onClose += () => { if (--completedCount == 0) DoAction(); };
                 if (targetDirectory != null)
                 { targetDirectory.onClose += () => { if (--completedCount == 0) DoAction(); }; }
                 void DoAction()
                 {
-                    if(sourceDirectory.IsProcessingComplete)
+                    if (sourceDirectory.IsProcessingComplete)
                     {
                         SortedList<string, FileSystemEntry> sourceEntries = sourceDirectory.Entries;
                         SortedList<string, FileSystemEntry> targetEntries = null;
                         if (targetDirectory != null && targetDirectory.IsProcessingComplete)
                         { targetEntries = targetDirectory.Entries; }
-                        if(sourceEntries != null)
+                        if (sourceEntries != null)
                         {
                             commandHandler.AddCommand(() =>
                             {
@@ -83,18 +83,24 @@ namespace E.Data
                                         {
                                             string partPath = matchRule1.Match(targetEntry.uri).Groups[1].Value;
                                             string sourcePath = sourceUri + partPath;
-                                            if (!sourceEntries.ContainsKey(Utility.ConvertURLSlash(sourcePath)))
+                                            if(!sourceEntries.TryGetValue(Utility.ConvertURLSlash(sourcePath),
+                                                out FileSystemEntry sourceEntry))
                                             { deleteList.Add(targetEntry); }
+                                            else
+                                            {
+                                                if(sourceEntry.lastModified != targetEntry.lastModified)
+                                                { deleteList.Add(targetEntry); }
+                                            }
                                         }
                                     }
                                     int deleteListIndex = 0;
-                                    if(deleteList.Count > 0) { doCloneMark = true; deleteNext(); }
+                                    if (deleteList.Count > 0) { doCloneMark = true; deleteNext(); }
                                     void deleteNext()
                                     {
                                         DeleteAsyncOperation deleteAsync = Delete(deleteList[deleteListIndex].uri);
                                         deleteAsync.onClose += () =>
                                         {
-                                            if ((++deleteListIndex) < sourceEntryList.Count) { deleteNext(); }
+                                            if (++deleteListIndex < deleteList.Count) { deleteNext(); }
                                             else { doClone(); }
                                         };
                                     }
@@ -131,7 +137,7 @@ namespace E.Data
                 void DoClose()
                 {
                     asyncOperation.Close();
-                    asyncOperation.onClose?.Invoke();
+                    commandHandler.AddCommand(() => { asyncOperation.onClose?.Invoke(); });
                 }
             }
             return asyncOperation;
