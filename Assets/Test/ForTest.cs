@@ -295,9 +295,13 @@ namespace E
             //string sourceUri = "http://localhost:4322/StreamingAssets/";
             string sourceUri = "http://localhost:4406/StreamingAssets/";
             string targetUri = "F:/Downloads/StreamingAssets/";
-            cloneDirectoryAsyncOperation =
-                dataProcessor.CloneDirectory(sourceUri, targetUri);
-            cloneDirectoryAsyncOperation.onClose += () => { Debug.LogError("End execute."); };
+            cloneDirectoryAsyncOperation = dataProcessor.CloneDirectory(sourceUri, targetUri);
+            cloneDirectoryAsyncOperation.sourceAccount =
+            cloneDirectoryAsyncOperation.targetAccount =
+            new ConnectionAsyncOperation.Account() 
+            { username = "admin", password = "123456" };
+            cloneDirectoryAsyncOperation.onClose += () => 
+            { Debug.LogError("End execute."); };
         }
 
 

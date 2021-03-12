@@ -30,22 +30,32 @@ namespace E.Data
         {
             if (Check(source, target, out CloneDirectoryAsyncOperationImplement asyncOperation))
             {
-                asyncOperation.IsWorking = true;
                 string sourceUri = GetOriginalString(source);
                 string targetUri = GetOriginalString(target);
-                DirectoryAsyncOperation sourceDirectory = GetFileSystemEntries(sourceUri);
-                DirectoryAsyncOperation targetDirectory = GetFileSystemEntries(targetUri);
-                if (sourceDirectory == null)
+                DirectoryAsyncOperation sourceDirectory = null;
+                DirectoryAsyncOperation targetDirectory = null;
+                commandHandler.AddCommand(() =>
                 {
-                    asyncOperation.IsError = true;
-                    DoClose();
-                    return asyncOperation;
-                }
-                int completedCount = 1;
-                if (targetDirectory != null) { completedCount++; }
-                sourceDirectory.onClose += () => { if (--completedCount == 0) DoAction(); };
-                if (targetDirectory != null)
-                { targetDirectory.onClose += () => { if (--completedCount == 0) DoAction(); }; }
+                    asyncOperation.IsWorking = true;
+                    sourceDirectory = GetFileSystemEntries(sourceUri);
+                    targetDirectory = GetFileSystemEntries(targetUri);
+                    if (sourceDirectory == null)
+                    {
+                        asyncOperation.IsError = true;
+                        DoClose();
+                        return;
+                    }
+                    sourceDirectory.targetAccount = asyncOperation.sourceAccount;
+                    int completedCount = 1;
+                    if (targetDirectory != null)
+                    {
+                        targetDirectory.targetAccount = asyncOperation.targetAccount;
+                        completedCount++;
+                    }
+                    sourceDirectory.onClose += () => { if (--completedCount == 0) DoAction(); };
+                    if (targetDirectory != null)
+                    { targetDirectory.onClose += () => { if (--completedCount == 0) DoAction(); }; }
+                });
                 void DoAction()
                 {
                     if (sourceDirectory.IsProcessingComplete)
@@ -83,12 +93,12 @@ namespace E.Data
                                         {
                                             string partPath = matchRule1.Match(targetEntry.uri).Groups[1].Value;
                                             string sourcePath = sourceUri + partPath;
-                                            if(!sourceEntries.TryGetValue(Utility.ConvertURLSlash(sourcePath),
+                                            if (!sourceEntries.TryGetValue(Utility.ConvertURLSlash(sourcePath),
                                                 out FileSystemEntry sourceEntry))
                                             { deleteList.Add(targetEntry); }
                                             else
                                             {
-                                                if(sourceEntry.lastModified != targetEntry.lastModified)
+                                                if (sourceEntry.lastModified != targetEntry.lastModified)
                                                 { deleteList.Add(targetEntry); }
                                             }
                                         }
