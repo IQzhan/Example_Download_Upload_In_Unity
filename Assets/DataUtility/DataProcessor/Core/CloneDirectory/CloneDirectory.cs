@@ -108,6 +108,7 @@ namespace E.Data
                                     void deleteNext()
                                     {
                                         DeleteAsyncOperation deleteAsync = Delete(deleteList[deleteListIndex].uri);
+                                        deleteAsync.targetAccount = asyncOperation.targetAccount;
                                         deleteAsync.onClose += () =>
                                         {
                                             if (++deleteListIndex < deleteList.Count) { deleteNext(); }
@@ -126,6 +127,8 @@ namespace E.Data
                                         string partPath = matchRule.Match(sourceEntry.uri).Groups[1].Value;
                                         string targetPath = targetUri + partPath;
                                         CloneAsyncOperation cloneAsync = Clone(sourceEntry.uri, targetPath);
+                                        cloneAsync.sourceAccount = asyncOperation.sourceAccount;
+                                        cloneAsync.targetAccount = asyncOperation.targetAccount;
                                         cloneAsync.LoadData = false;
                                         cloneAsync.onClose += () =>
                                         {

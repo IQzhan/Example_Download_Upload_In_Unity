@@ -1,14 +1,8 @@
 ﻿using E.Data;
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Net;
 using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading;
-using System.Xml;
 using UnityEngine;
 
 namespace E
@@ -19,7 +13,7 @@ namespace E
         private static void Create()
         {
             ForTest forTest = FindObjectOfType<ForTest>();
-            if(forTest == null)
+            if (forTest == null)
             { DontDestroyOnLoad(new GameObject("ForTest").AddComponent<ForTest>()); }
         }
 
@@ -87,7 +81,7 @@ namespace E
                 sb.Append(deleteAsyncOperation.Progress);
                 sb.Append(System.Environment.NewLine);
             }
-            if(directoryAsyncOperation != null)
+            if (directoryAsyncOperation != null)
             {
                 sb.Append("directory:");
                 sb.Append(System.Environment.NewLine);
@@ -95,7 +89,7 @@ namespace E
                 sb.Append(directoryAsyncOperation.Progress);
                 sb.Append(System.Environment.NewLine);
             }
-            if(asyncOperationGroup != null)
+            if (asyncOperationGroup != null)
             {
                 sb.Append("Group:");
                 sb.Append(System.Environment.NewLine);
@@ -176,7 +170,7 @@ namespace E
             DataProcessorDebug.OverrideLogException((System.Exception exception) =>
             {
                 Debug.LogException(exception);
-            }); 
+            });
             DataProcessorDebug.enableLog = true;
             DataProcessorDebug.enableLogError = true;
             DataProcessorDebug.enableLogException = true;
@@ -294,16 +288,17 @@ namespace E
             //TODO Compare
             //string sourceUri = "http://localhost:4322/StreamingAssets/";
             string sourceUri = "http://localhost:4406/StreamingAssets/";
-            string targetUri = "F:/Downloads/StreamingAssets/";
-            cloneDirectoryAsyncOperation = dataProcessor.CloneDirectory(sourceUri, targetUri);
+            //string targetUri = "F:/Downloads/StreamingAssets/";
+            string targetUri = Application.persistentDataPath;
+            cloneDirectoryAsyncOperation =
+            dataProcessor.CloneDirectory(sourceUri, targetUri);
             cloneDirectoryAsyncOperation.sourceAccount =
             cloneDirectoryAsyncOperation.targetAccount =
-            new ConnectionAsyncOperation.Account() 
+            new ConnectionAsyncOperation.Account()
             { username = "admin", password = "123456" };
-            cloneDirectoryAsyncOperation.onClose += () => 
+            cloneDirectoryAsyncOperation.onClose += () =>
             { Debug.LogError("End execute."); };
         }
-
 
         private bool DeleteDir(string dirUri)
         {
