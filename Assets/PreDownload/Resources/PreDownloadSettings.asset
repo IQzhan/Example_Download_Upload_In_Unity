@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 39676114f48ee8c4fa4766b27ab19617, type: 3}
+  m_Name: PreDownloadSettings
+  m_EditorClassIdentifier: 
+  enable: 1
+  downloadFrom: 
+  readFrom: 0
+  progressPrefab: {fileID: 125872095735518822, guid: b9f89566dfdebd04096a99a4ffbe7503,
+    type: 3}
+  saveTo: 
+  sourcePath: 
+  sourceUsername: 
+  sourcePassword: 
+  targetPath: 0
+  targetSubPath: 
+  targetUsername: 
+  targetPassword: 
